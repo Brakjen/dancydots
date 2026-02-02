@@ -237,10 +237,58 @@ export function cellularFlowField(x, y, options) {
 }
 
 /**
+ * Simple pseudo-random number from seed (deterministic).
+ */
+function seededRandom(seed) {
+  const x = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+/**
+ * Random Walk field - each dot wanders independently.
+ * Uses hash-based randomness for truly uncorrelated motion.
+ */
+export function randomWalkField(x, y, options) {
+  const time = (options && options.time) || 0;
+  const x0 = (options && options.x0) || 0;
+  const y0 = (options && options.y0) || 0;
+  const cfg = SETTINGS.fields.randomWalk || {};
+  const speed = cfg.speed !== undefined ? cfg.speed : 0.5;
+  const turnSpeed = cfg.turnSpeed !== undefined ? cfg.turnSpeed : 0.3;
+
+  // Create unique ID for this dot
+  const dotId = x0 * 1.3 + y0 * 2.7;
+
+  // Time step - direction changes smoothly over this period
+  const period = 1 / turnSpeed; // seconds per direction change
+  const timeStep = Math.floor(time / period);
+  const timeFrac = (time % period) / period; // 0 to 1 within period
+
+  // Get angle for current and next time step
+  const angle1 = seededRandom(dotId + timeStep * 100) * Math.PI * 2;
+  const angle2 = seededRandom(dotId + (timeStep + 1) * 100) * Math.PI * 2;
+
+  // Smoothly interpolate between angles (handle wrap-around)
+  let angleDiff = angle2 - angle1;
+  if (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+  if (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+  // Smooth easing
+  const ease = timeFrac * timeFrac * (3 - 2 * timeFrac);
+  const angle = angle1 + angleDiff * ease;
+
+  const dx = Math.cos(angle) * speed;
+  const dy = Math.sin(angle) * speed;
+
+  return { dx, dy };
+}
+
+/**
  * Registry of all available field functions.
  * Add new fields here to make them available in the application.
  */
 export const FIELDS = {
+  randomWalk: randomWalkField,
   shiver: shiverField,
   wave: waveField,
   curlNoise: curlNoiseField,

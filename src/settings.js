@@ -4,19 +4,56 @@ export const SETTINGS = {
   canvasWidth: 0,
   canvasHeight: 0,
 
-  // Dot settings
+  // Dot grid mode: "grid" = uniform spacing, "layered" = random per-layer
+  gridMode: "layered",
+
+  // Current active field
+  currentField: "randomWalk",
+
+  // Dot settings (used in grid mode)
   dotSpacing: 25,
   dotColor: "gray",
   dotRadius: 1,
 
+  // Depth layers (back to front): large/blurry/slow → small/crisp/fast
+  // count: number of dots in this layer (layered mode only)
+  // radius: dot size in pixels
+  // softness: 0 = hard edge, 1 = fully soft Gaussian
+  // colors: array of base colors to randomly pick from (with slight variation)
+  layers: [
+    {
+      count: 15,
+      radius: 0,
+      softness: 0.6,
+      speedMultiplier: 0.5,
+      colors: ["#1c3232", "#291717", "#1a301a"], // dark muted teal, crimson, green
+    },
+    {
+      count: 40,
+      radius: 0,
+      softness: 1,
+      speedMultiplier: 1.2,
+      colors: ["#1d1d40", "#492441", "#505323"], // slightly brighter muted
+    },
+    {
+      count: 0,
+      radius: 3,
+      softness: 0.05,
+      speedMultiplier: 1.0,
+      colors: ["#556666", "#665555", "#556655"], // muted foreground
+    },
+  ],
+
   // Animation settings
   animationFPS: 30,
 
-  // Current active field
-  currentField: "cellular",
-
   // Field-specific settings (grouped by field)
   fields: {
+    randomWalk: {
+      speed: 1, // Base movement speed
+      turnSpeed: 0.5, // How fast direction changes (lower = smoother)
+      noiseScale: 2, // Spatial scale of direction noise
+    },
     shiver: {
       amplitude: 1,
       restoreStrength: 0.5,
@@ -80,5 +117,33 @@ export const FIELD_INFO = {
   wave: {
     name: "Traveling Wave",
     description: "Horizontal wave motion across the canvas",
+  },
+  randomWalk: {
+    name: "Random Walk",
+    description: "Smooth random movement using Perlin noise",
+  },
+  curlNoise: {
+    name: "Curl Noise",
+    description: "Fluid-like swirling motion using curl noise",
+  },
+  multiWave: {
+    name: "Multi Wave",
+    description: "Combination of multiple traveling waves",
+  },
+  vortexLattice: {
+    name: "Vortex Lattice",
+    description: "Array of vortices creating circular flows",
+  },
+  waveNoise: {
+    name: "Wave + Noise",
+    description: "Traveling wave with added noise perturbations",
+  },
+  standingWave: {
+    name: "Standing Wave",
+    description: "Stationary wave oscillating in place",
+  },
+  cellular: {
+    name: "Cellular Flow",
+    description: "Flow based on cellular patterns",
   },
 };
