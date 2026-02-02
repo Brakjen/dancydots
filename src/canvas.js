@@ -1,6 +1,7 @@
 import { SETTINGS } from "./settings.js";
 
-let canvas, ctx;
+let canvas;
+let ctx;
 const CANVAS_ID = "dotCanvas";
 
 // Global array to hold dot positions
@@ -10,13 +11,15 @@ export let dots = [];
  * Initializes the canvas element and sets up initial drawing.
  */
 export function initCanvas() {
-  console.log("Initializing canvas...");
   canvas = document.getElementById(CANVAS_ID);
   ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = true;
 
   // Set size
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
+  SETTINGS.canvasWidth = canvas.width;
+  SETTINGS.canvasHeight = canvas.height;
 
   // Initial draw
   setCanvasBackground();
@@ -24,10 +27,12 @@ export function initCanvas() {
   drawScene(dots, SETTINGS.dotColor);
 
   // Handle resize
-  window.addEventListener("resize", () => {
+  window.addEventListener("resize", function () {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    const dots = buildDotGrid();
+    SETTINGS.canvasWidth = canvas.width;
+    SETTINGS.canvasHeight = canvas.height;
+    dots = buildDotGrid(); // Update global dots array
     setCanvasBackground();
     drawScene(dots, SETTINGS.dotColor);
   });
@@ -35,41 +40,38 @@ export function initCanvas() {
 
 /**
  * Builds a grid of dot positions based on the current canvas size and spacing.
- * @returns {Array} Array of dot positions
+ * @returns {Array} Array of dot position objects
  */
 export function buildDotGrid() {
-  const dots = [];
-  for (
-    let x = SETTINGS.dotSpacing / 2;
-    x < canvas.width;
-    x += SETTINGS.dotSpacing
-  ) {
-    for (
-      let y = SETTINGS.dotSpacing / 2;
-      y < canvas.height;
-      y += SETTINGS.dotSpacing
-    ) {
-      dots.push({
+  const newDots = [];
+  const spacing = SETTINGS.dotSpacing;
+  const startOffset = spacing / 2;
+
+  for (let x = startOffset; x < canvas.width; x = x + spacing) {
+    for (let y = startOffset; y < canvas.height; y = y + spacing) {
+      const dot = {
         x: x,
-        x0: x,
-        vx: 0,
         y: y,
-        y0: y,
-        vy: 0,
-      });
+        x0: x, // Original x position (for restoration)
+        y0: y, // Original y position (for restoration)
+      };
+      newDots.push(dot);
     }
   }
-  return dots;
+
+  return newDots;
 }
 
 /**
  * Draws dots on the canvas at the specified positions.
- * @param {*} dots Array of dot positions
+ * @param {Array} dotsArray - Array of dot position objects
+ * @param {string} dotColor - Color to fill the dots
  */
-export function drawScene(dots, dotColor) {
-  setCanvasBackground(); // Fills canvas (acts as "clear")
+export function drawScene(dotsArray, dotColor) {
+  setCanvasBackground();
   ctx.fillStyle = dotColor;
-  dots.forEach((dot) => {
+
+  dotsArray.forEach(function (dot) {
     ctx.beginPath();
     ctx.arc(dot.x, dot.y, SETTINGS.dotRadius, 0, Math.PI * 2);
     ctx.fill();
@@ -78,9 +80,12 @@ export function drawScene(dots, dotColor) {
 
 /**
  * Sets the canvas background color.
- * @param {*} color Background color
+ * @param {string} color - Background color (defaults to SETTINGS value)
  */
-export function setCanvasBackground(color = SETTINGS.backgroundColor) {
+export function setCanvasBackground(color) {
+  if (color === undefined) {
+    color = SETTINGS.canvasBackgroundColor;
+  }
   ctx.fillStyle = color;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
