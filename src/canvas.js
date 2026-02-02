@@ -45,10 +45,10 @@ export function initCanvas() {
 export function buildDotGrid() {
   const newDots = [];
   const spacing = SETTINGS.dotSpacing;
-  const startOffset = spacing / 2;
+  const startOffset = -canvas.width * 0.5; // Start off-canvas for smooth entry
 
-  for (let x = startOffset; x < canvas.width; x = x + spacing) {
-    for (let y = startOffset; y < canvas.height; y = y + spacing) {
+  for (let x = startOffset; x < canvas.width * 1.5; x = x + spacing) {
+    for (let y = startOffset; y < canvas.height * 1.5; y = y + spacing) {
       const dot = {
         x: x,
         y: y,
