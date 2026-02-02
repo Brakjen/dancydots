@@ -1,12 +1,10 @@
-let canvas, ctx;
+import { SETTINGS } from "./settings.js";
 
+let canvas, ctx;
 const CANVAS_ID = "dotCanvas";
-const SETTINGS = {
-  spacing: 20,
-  dotColor: "gray",
-  dotRadius: 1,
-  backgroundColor: "black",
-};
+
+// Global array to hold dot positions
+export let dots = [];
 
 /**
  * Initializes the canvas element and sets up initial drawing.
@@ -20,11 +18,10 @@ export function initCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 
-  setCanvasBackground();
-
   // Initial draw
-  const dots = buildDotGrid();
-  drawDots(dots, SETTINGS.dotColor);
+  setCanvasBackground();
+  dots = buildDotGrid();
+  drawScene(dots, SETTINGS.dotColor);
 
   // Handle resize
   window.addEventListener("resize", () => {
@@ -32,7 +29,7 @@ export function initCanvas() {
     canvas.height = window.innerHeight;
     const dots = buildDotGrid();
     setCanvasBackground();
-    drawDots(dots, SETTINGS.dotColor);
+    drawScene(dots, SETTINGS.dotColor);
   });
 }
 
@@ -42,13 +39,24 @@ export function initCanvas() {
  */
 export function buildDotGrid() {
   const dots = [];
-  for (let x = SETTINGS.spacing / 2; x < canvas.width; x += SETTINGS.spacing) {
+  for (
+    let x = SETTINGS.dotSpacing / 2;
+    x < canvas.width;
+    x += SETTINGS.dotSpacing
+  ) {
     for (
-      let y = SETTINGS.spacing / 2;
+      let y = SETTINGS.dotSpacing / 2;
       y < canvas.height;
-      y += SETTINGS.spacing
+      y += SETTINGS.dotSpacing
     ) {
-      dots.push({ x: x, y: y });
+      dots.push({
+        x: x,
+        x0: x,
+        vx: 0,
+        y: y,
+        y0: y,
+        vy: 0,
+      });
     }
   }
   return dots;
@@ -58,7 +66,8 @@ export function buildDotGrid() {
  * Draws dots on the canvas at the specified positions.
  * @param {*} dots Array of dot positions
  */
-export function drawDots(dots, dotColor) {
+export function drawScene(dots, dotColor) {
+  setCanvasBackground(); // Fills canvas (acts as "clear")
   ctx.fillStyle = dotColor;
   dots.forEach((dot) => {
     ctx.beginPath();
