@@ -13,18 +13,54 @@ export const SETTINGS = {
   animationFPS: 30,
 
   // Current active field
-  currentField: "wave",
+  currentField: "cellular",
 
   // Field-specific settings (grouped by field)
   fields: {
     shiver: {
-      amplitude: 1,  // Adjusted (was 100 * dotSpeed 0.01)
+      amplitude: 1,
       restoreStrength: 0.5,
     },
     wave: {
       waveNumber: 0.005,
-      angularFrequency: 1.0,  // rad/s (with time in seconds)
-      amplitude: 1,  // Adjusted (was 100 * dotSpeed 0.01)
+      angularFrequency: 1.0,
+      amplitude: 1,
+    },
+    // New fields defaults
+    curlNoise: {
+      scale: 0.005,
+      amplitude: 15,
+      timeSpeed: 0.05,
+    },
+    multiWave: {
+      components: [
+        { k: 0.005, omega: 1, amplitude: 0.5, phi: 0 },
+        { k: 0.001, omega: 1.2, amplitude: 0.75, phi: Math.PI / 4 },
+      ],
+    },
+    vortexLattice: {
+      spacing: 1,
+      radius: 750,
+      strength: -0.1,
+      centers: [
+        { x: 100, y: 100 },
+        { x: 1400, y: 300 },
+        { x: 3000, y: 990 },
+      ],
+    },
+    waveNoise: {
+      scale: 0.002,
+      timeSpeed: 0.1,
+      amplitude: 0.2,
+    },
+    standingWave: {
+      waveNumber: 0.005,
+      angularFrequency: 0.1,
+      amplitude: 1.0,
+    },
+    cellular: {
+      cellSize: 50,
+      strength: 0.1,
     },
   },
 };
