@@ -1,4 +1,5 @@
-import { SETTINGS } from "./settings.js";
+import { CONFIG } from "./config.js";
+import { STATE, computeState } from "./state.js";
 
 let canvas;
 let ctx;
@@ -6,20 +7,6 @@ const CANVAS_ID = "dotCanvas";
 
 // Global array to hold dot positions
 export let dots = [];
-
-/**
- * Updates layer radii based on current canvas height.
- * Call after canvas dimensions are set.
- */
-function updateLayerRadii() {
-  const h = canvas.height;
-  if (SETTINGS.layers[0]) {
-    SETTINGS.layers[0].radius = h / 2;
-  }
-  if (SETTINGS.layers[1]) {
-    SETTINGS.layers[1].radius = h / 10;
-  }
-}
 
 /**
  * Initializes the canvas element and sets up initial drawing.
@@ -32,87 +19,94 @@ export function initCanvas() {
   // Set size
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
-  SETTINGS.canvasWidth = canvas.width;
-  SETTINGS.canvasHeight = canvas.height;
 
-  // Update layer radii based on canvas size
-  updateLayerRadii();
+  // Compute state from config + canvas dimensions
+  computeState(canvas.width, canvas.height);
 
   // Initial draw
   setCanvasBackground();
   dots = buildDotGrid();
-  drawScene(dots, SETTINGS.dotColor);
+  drawScene(dots);
 
   // Handle resize
   window.addEventListener("resize", function () {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    SETTINGS.canvasWidth = canvas.width;
-    SETTINGS.canvasHeight = canvas.height;
-    updateLayerRadii(); // Recalculate radii on resize
-    dots = buildDotGrid(); // Update global dots array
+    computeState(canvas.width, canvas.height);
+    dots = buildDotGrid();
     setCanvasBackground();
-    drawScene(dots, SETTINGS.dotColor);
+    drawScene(dots);
   });
 }
 
 /**
- * Converts hex color to rgba string with alpha.
- * @param {string} hex - Hex color like \"#1a3a3a\"
- * @param {number} alpha - Alpha value 0-1
- * @returns {string} rgba string
+ * Rebuild dots and redraw. Call when config changes.
  */
-function hexToRgba(hex, alpha) {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
+export function refresh() {
+  computeState(canvas.width, canvas.height);
+  dots = buildDotGrid();
+  setCanvasBackground();
+  drawScene(dots);
 }
 
 /**
- * Picks a random color from array and applies slight HSL variation.
- * @param {Array} colors - Array of hex color strings
- * @returns {string} A color string with slight variation
+ * Get the canvas element.
+ */
+export function getCanvas() {
+  return canvas;
+}
+
+/**
+ * Get the canvas context.
+ */
+export function getContext() {
+  return ctx;
+}
+
+/**
+ * Converts hex color to rgba string with alpha.
+ */
+function hexToRgba(hex, alpha) {
+  // Handle shorthand or invalid
+  if (!hex || hex.length < 7) return `rgba(128,128,128,${alpha})`;
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+/**
+ * Picks a random color from array and applies slight variation.
  */
 function pickColorWithVariation(colors) {
-  if (!colors || colors.length === 0) return SETTINGS.dotColor;
+  if (!colors || colors.length === 0) return CONFIG.grid.color;
   const base = colors[Math.floor(Math.random() * colors.length)];
-  // Add slight variation by adjusting lightness
-  const variation = (Math.random() - 0.5) * 10; // ±5% lightness
+  const variation = (Math.random() - 0.5) * 10;
   return adjustColorLightness(base, variation);
 }
 
 /**
  * Adjusts a hex color's lightness.
- * @param {string} hex - Hex color like "#1a3a3a"
- * @param {number} amount - Lightness adjustment (-100 to 100)
- * @returns {string} Adjusted hex color
  */
 function adjustColorLightness(hex, amount) {
-  // Parse hex
+  if (!hex || hex.length < 7) return hex;
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
 
-  // Simple lightness adjustment
-  const adjust = (c) =>
-    Math.max(0, Math.min(255, Math.round(c + amount * 2.55)));
+  const adjust = (c) => Math.max(0, Math.min(255, Math.round(c + amount * 2.55)));
   const nr = adjust(r);
   const ng = adjust(g);
   const nb = adjust(b);
 
-  return (
-    "#" + [nr, ng, nb].map((c) => c.toString(16).padStart(2, "0")).join("")
-  );
+  return "#" + [nr, ng, nb].map((c) => c.toString(16).padStart(2, "0")).join("");
 }
 
 /**
- * Builds dots based on gridMode setting.
- * "grid" = uniform spacing (original), "layered" = random per-layer counts
- * @returns {Array} Array of dot position objects
+ * Builds dots based on mode setting.
  */
 export function buildDotGrid() {
-  if (SETTINGS.gridMode === "layered") {
+  if (CONFIG.mode === "layered") {
     return buildLayeredDots();
   } else {
     return buildUniformGrid();
@@ -120,25 +114,23 @@ export function buildDotGrid() {
 }
 
 /**
- * Builds uniform grid of dots (original approach).
- * @returns {Array} Array of dot objects
+ * Builds uniform grid of dots (grid mode).
  */
 function buildUniformGrid() {
   const newDots = [];
-  const spacing = SETTINGS.dotSpacing;
+  const spacing = CONFIG.grid.spacing;
   const startOffset = -canvas.width * 0.5;
 
-  for (let x = startOffset; x < canvas.width * 1.5; x = x + spacing) {
-    for (let y = startOffset; y < canvas.height * 1.5; y = y + spacing) {
-      const dot = {
+  for (let x = startOffset; x < canvas.width * 1.5; x += spacing) {
+    for (let y = startOffset; y < canvas.height * 1.5; y += spacing) {
+      newDots.push({
         x: x,
         y: y,
         x0: x,
         y0: y,
-        layer: null, // No layer in grid mode
-        color: SETTINGS.dotColor,
-      };
-      newDots.push(dot);
+        layer: null,
+        color: CONFIG.grid.color,
+      });
     }
   }
   return newDots;
@@ -146,22 +138,15 @@ function buildUniformGrid() {
 
 /**
  * Gets collision radius for a dot during placement.
- * Uses same logic as animation collision but can be tuned separately.
  */
 function getPlacementRadius(layerIndex) {
-  const layerConfig = SETTINGS.layers[layerIndex];
+  const layerConfig = STATE.layers[layerIndex];
   if (!layerConfig) return 10;
-  // Use 40% of visual radius for collision (same as animation)
   return layerConfig.radius * Math.max(1, layerConfig.softness || 1) * 1.0;
 }
 
 /**
  * Checks if a position overlaps with any existing dots.
- * @param {number} x - X position to check
- * @param {number} y - Y position to check
- * @param {number} radius - Collision radius of new dot
- * @param {Array} existingDots - Array of already placed dots
- * @returns {boolean} True if overlapping
  */
 function checkOverlap(x, y, radius, existingDots) {
   for (let i = 0; i < existingDots.length; i++) {
@@ -171,24 +156,22 @@ function checkOverlap(x, y, radius, existingDots) {
     const dy = y - other.y;
     const minDist = radius + otherRadius;
     if (dx * dx + dy * dy < minDist * minDist) {
-      return true; // Overlapping
+      return true;
     }
   }
   return false;
 }
 
 /**
- * Builds random dots per layer with per-dot colors.
- * Ensures no initial overlap between dots.
- * @returns {Array} Array of dot objects
+ * Builds random dots per layer (layered mode).
  */
 function buildLayeredDots() {
   const newDots = [];
-  const layers = SETTINGS.layers;
+  const layers = STATE.layers;
   const w = canvas.width;
   const h = canvas.height;
   const margin = 0.3;
-  const maxAttempts = 100; // Prevent infinite loops
+  const maxAttempts = 100;
 
   for (let layerIndex = 0; layerIndex < layers.length; layerIndex++) {
     const layerConfig = layers[layerIndex];
@@ -200,67 +183,59 @@ function buildLayeredDots() {
       let attempts = 0;
       let placed = false;
 
-      // Try to find a non-overlapping position
       while (!placed && attempts < maxAttempts) {
         x = (Math.random() - margin) * w * (1 + 2 * margin);
         y = (Math.random() - margin) * h * (1 + 2 * margin);
-
         if (!checkOverlap(x, y, placementRadius, newDots)) {
           placed = true;
         }
         attempts++;
       }
 
-      // Place dot even if we couldn't find non-overlapping spot
-      // (better than missing dots entirely)
-      const dot = {
+      newDots.push({
         x: x,
         y: y,
         x0: x,
         y0: y,
         layer: layerIndex,
         color: pickColorWithVariation(layerConfig.colors),
-      };
-      newDots.push(dot);
+      });
     }
   }
   return newDots;
 }
 
 /**
- * Draws dots on the canvas at the specified positions.
- * Uses radial gradients for soft Gaussian blobs on layers with softness > 0.
- * @param {Array} dotsArray - Array of dot position objects
- * @param {string} dotColor - Fallback color (used in grid mode)
+ * Draws dots on the canvas.
  */
-export function drawScene(dotsArray, dotColor) {
+export function drawScene(dotsArray) {
   setCanvasBackground();
 
-  if (SETTINGS.gridMode === "layered") {
+  if (CONFIG.mode === "layered") {
     drawLayeredScene(dotsArray);
   } else {
-    drawGridScene(dotsArray, dotColor);
+    drawGridScene(dotsArray);
   }
 }
 
 /**
- * Draws uniform grid dots (simple circles).
+ * Draws uniform grid dots.
  */
-function drawGridScene(dotsArray, dotColor) {
-  ctx.fillStyle = dotColor;
+function drawGridScene(dotsArray) {
+  ctx.fillStyle = CONFIG.grid.color;
+  const radius = CONFIG.grid.radius;
   dotsArray.forEach(function (dot) {
     ctx.beginPath();
-    ctx.arc(dot.x, dot.y, SETTINGS.dotRadius, 0, Math.PI * 2);
+    ctx.arc(dot.x, dot.y, radius, 0, Math.PI * 2);
     ctx.fill();
   });
 }
 
 /**
- * Draws layered dots with per-layer radius, softness, and per-dot colors.
- * Softness > 1 creates even softer gradients by extending the fade zone.
+ * Draws layered dots with gradients.
  */
 function drawLayeredScene(dotsArray) {
-  const layers = SETTINGS.layers;
+  const layers = STATE.layers;
 
   for (let layerIndex = 0; layerIndex < layers.length; layerIndex++) {
     const layerConfig = layers[layerIndex];
@@ -270,27 +245,19 @@ function drawLayeredScene(dotsArray) {
     dotsArray.forEach(function (dot) {
       if (dot.layer !== layerIndex) return;
 
-      const color = dot.color || SETTINGS.dotColor;
+      const color = dot.color || CONFIG.grid.color;
 
       if (softness > 0) {
-        // Soft Gaussian blob using radial gradient
-        // softness > 1 extends gradient beyond visible radius for extra softness
         const gradientRadius = radius * Math.max(1, softness);
         const gradient = ctx.createRadialGradient(
-          dot.x,
-          dot.y,
-          0,
-          dot.x,
-          dot.y,
-          gradientRadius,
+          dot.x, dot.y, 0,
+          dot.x, dot.y, gradientRadius
         );
 
-        // True Gaussian falloff: alpha = e^(-(r/sigma)^2)
-        // More stops = smoother gradient
+        // True Gaussian falloff
         const stops = 8;
         for (let i = 0; i <= stops; i++) {
-          const t = i / stops; // 0 to 1
-          // Gaussian: sigma controls spread, here ~0.4 of radius
+          const t = i / stops;
           const gaussian = Math.exp(-Math.pow(t * 2.5, 2));
           gradient.addColorStop(t, hexToRgba(color, gaussian));
         }
@@ -300,7 +267,6 @@ function drawLayeredScene(dotsArray) {
         ctx.arc(dot.x, dot.y, gradientRadius, 0, Math.PI * 2);
         ctx.fill();
       } else {
-        // Hard-edged dot
         ctx.fillStyle = color;
         ctx.beginPath();
         ctx.arc(dot.x, dot.y, radius, 0, Math.PI * 2);
@@ -312,12 +278,8 @@ function drawLayeredScene(dotsArray) {
 
 /**
  * Sets the canvas background color.
- * @param {string} color - Background color (defaults to SETTINGS value)
  */
 export function setCanvasBackground(color) {
-  if (color === undefined) {
-    color = SETTINGS.canvasBackgroundColor;
-  }
-  ctx.fillStyle = color;
+  ctx.fillStyle = color || CONFIG.backgroundColor;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 }

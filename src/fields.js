@@ -1,39 +1,27 @@
-import { SETTINGS } from "./settings.js";
+import { CONFIG } from "./config.js";
+import { STATE } from "./state.js";
 
 /**
- * Shiver field function that perturbs dot positions randomly.
- *
- * Uses a restorative force to pull dots back to their original positions.
- * @param {number} x - Current x position of the dot.
- * @param {number} y - Current y position of the dot.
- * @param {Object} options - Options object containing field parameters.
- * @param {number} options.x0 - Original x position of the dot.
- * @param {number} options.y0 - Original y position of the dot.
- * @returns {{dx: number, dy: number}} Displacement vector
+ * Shiver field - random jitter with restoration force.
  */
 export function shiverField(x, y, options) {
   const x0 = options.x0;
   const y0 = options.y0;
-  const fieldSettings = SETTINGS.fields.shiver;
-  const amplitude = fieldSettings.amplitude;
-  const restoreStrength = fieldSettings.restoreStrength;
+  const cfg = CONFIG.fields.shiver;
+  const amplitude = cfg.amplitude;
+  const restoreStrength = cfg.restoreStrength;
 
-  // Calculate distance from original position
-  // Used to scale down random motion when far away
-  // Maximum distance limits dot wandering to a max of about 50 pixels
   const distanceX = x - x0;
   const distanceY = y - y0;
   const dist = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
   const maxDist = 50;
-  const penalty = Math.max(0, (dist - maxDist) / maxDist); // 0 to 1
+  const penalty = Math.max(0, (dist - maxDist) / maxDist);
 
-  // Random jitter scaled by amplitude and penalty
   const randomX = Math.random() - 0.5;
   const randomY = Math.random() - 0.5;
   const baseDx = randomX * amplitude * (1 - penalty);
   const baseDy = randomY * amplitude * (1 - penalty);
 
-  // Restoration force towards original position
   const restoreX = (x0 - x) * restoreStrength;
   const restoreY = (y0 - y) * restoreStrength;
 
@@ -44,47 +32,36 @@ export function shiverField(x, y, options) {
 }
 
 /**
- * Traveling wave field: creates horizontal wave motion.
- * @param {number} x - Dot x position.
- * @param {number} y - Dot y position.
- * @param {Object} options - Options object containing field parameters.
- * @param {number} options.time - Current time in seconds for animation.
- * @returns {{dx: number, dy: number}} Displacement vector.
+ * Traveling wave field.
  */
 export function waveField(x, y, options) {
   const time = options.time;
-  const fieldSettings = SETTINGS.fields.wave;
-  const k = fieldSettings.waveNumber;
-  const omega = fieldSettings.angularFrequency;
-  const amplitude = fieldSettings.amplitude;
+  const cfg = CONFIG.fields.wave;
+  const k = cfg.waveNumber;
+  const omega = cfg.angularFrequency;
+  const amplitude = cfg.amplitude;
 
-  // Using a simple traveling wave formula: dx = A * sin(kx - ωt)
   const phase = k * x - omega * time;
   const dx = amplitude * Math.sin(phase);
 
-  return {
-    dx: dx,
-    dy: 0,
-  };
+  return { dx: dx, dy: 0 };
 }
 
 /* ------------------------------------------------------------------ */
-/* Simple value-noise implementation (3D: x, y, t) - used internally */
+/* Value-noise implementation (3D) */
 /* ------------------------------------------------------------------ */
 function fade(t) {
   return t * t * t * (t * (t * 6 - 15) + 10);
 }
 
 function hash3(i, j, k) {
-  // integer hash -> deterministic pseudorandom [0,1)
   let n = i + j * 57 + k * 131;
   n = (n << 13) ^ n;
   const nn = (n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff;
-  return nn; // integer in [0, 0x7fffffff]
+  return nn;
 }
 
 function noise3(x, y, t) {
-  // value noise via trilinear interpolation
   const xi = Math.floor(x);
   const yi = Math.floor(y);
   const ti = Math.floor(t);
@@ -97,11 +74,9 @@ function noise3(x, y, t) {
   const w = fade(tf);
 
   function corner(ix, iy, it) {
-    // hash to [0,1)
     return hash3(ix, iy, it) / 1073741824.0;
   }
 
-  // fetch corners
   const c000 = corner(xi, yi, ti);
   const c100 = corner(xi + 1, yi, ti);
   const c010 = corner(xi, yi + 1, ti);
@@ -115,7 +90,6 @@ function noise3(x, y, t) {
     return a + (b - a) * t2;
   }
 
-  // trilinear interpolation
   const x00 = lerp(c000, c100, u);
   const x10 = lerp(c010, c110, u);
   const x01 = lerp(c001, c101, u);
@@ -124,20 +98,20 @@ function noise3(x, y, t) {
   const y0 = lerp(x00, x10, v);
   const y1 = lerp(x01, x11, v);
 
-  const value = lerp(y0, y1, w);
-  return value; // in [0,1)
+  return lerp(y0, y1, w);
 }
 
 /* ------------------------------------------------------------------ */
-/* New fields implementations
+/* Field implementations */
 /* ------------------------------------------------------------------ */
 
 export function curlNoiseField(x, y, options) {
   const time = (options && options.time) || 0;
-  const s = SETTINGS.fields.curlNoise.scale;
-  const amp = SETTINGS.fields.curlNoise.amplitude;
-  const tSpeed = SETTINGS.fields.curlNoise.timeSpeed;
-  const eps = 0.001; // small step in noise-space
+  const cfg = CONFIG.fields.curlNoise;
+  const s = cfg.scale;
+  const amp = cfg.amplitude;
+  const tSpeed = cfg.timeSpeed;
+  const eps = 0.001;
 
   const nx1 = noise3((x + eps) * s, y * s, time * tSpeed);
   const nx2 = noise3((x - eps) * s, y * s, time * tSpeed);
@@ -147,31 +121,42 @@ export function curlNoiseField(x, y, options) {
   const dndx = (nx1 - nx2) / (2 * eps);
   const dndy = (ny1 - ny2) / (2 * eps);
 
-  const dx = amp * dndy;
-  const dy = -amp * dndx;
-  return { dx, dy };
+  return { dx: amp * dndy, dy: -amp * dndx };
 }
 
 export function multiWaveField(x, y, options) {
   const time = (options && options.time) || 0;
-  const comps = SETTINGS.fields.multiWave.components;
+  const comps = CONFIG.fields.multiWave.components;
   let dx = 0;
+  let dy = 0;
+  const n = comps.length || 1;
+
   for (let i = 0; i < comps.length; i++) {
     const c = comps[i];
-    dx += c.amplitude * Math.sin(c.k * x - c.omega * time + c.phi);
+    const k = c.k;
+    const angle = c.angle !== undefined ? c.angle : (i * Math.PI * 2) / n;
+    const kx = k * Math.cos(angle);
+    const ky = k * Math.sin(angle);
+    const phase = kx * x + ky * y - c.omega * time + (c.phi || 0);
+    const amp = c.amplitude || 1;
+    const cos = Math.cos(phase);
+    dx += amp * ky * cos;
+    dy += -amp * kx * cos;
   }
-  return { dx: dx, dy: 0 };
+  return { dx, dy };
 }
 
 export function vortexLatticeField(x, y, options) {
-  const list = SETTINGS.fields.vortexLattice.centers;
-  const R = SETTINGS.fields.vortexLattice.radius;
-  const S = SETTINGS.fields.vortexLattice.strength;
-  let dx = 0,
-    dy = 0;
-  for (let i = 0; i < list.length; i++) {
-    const cx = list[i].x;
-    const cy = list[i].y;
+  const centers = STATE.vortexCenters;
+  const cfg = CONFIG.fields.vortexLattice;
+  const R = cfg.radius;
+  const S = cfg.strength;
+  let dx = 0;
+  let dy = 0;
+
+  for (let i = 0; i < centers.length; i++) {
+    const cx = centers[i].x;
+    const cy = centers[i].y;
     const rx = x - cx;
     const ry = y - cy;
     const d2 = rx * rx + ry * ry;
@@ -187,32 +172,25 @@ export function vortexLatticeField(x, y, options) {
 
 export function waveNoiseField(x, y, options) {
   const time = (options && options.time) || 0;
-  const w = SETTINGS.fields.wave;
-  const noiseSettings = SETTINGS.fields.waveNoise;
-  const wave_dx =
-    w.amplitude * Math.sin(w.waveNumber * x - w.angularFrequency * time);
-  const noise_val = noise3(
-    x * noiseSettings.scale,
-    y * noiseSettings.scale,
-    time * noiseSettings.timeSpeed,
-  );
-  const dx = wave_dx + noiseSettings.amplitude * (noise_val - 0.5);
+  const waveCfg = CONFIG.fields.wave;
+  const noiseCfg = CONFIG.fields.waveNoise;
+  const wave_dx = waveCfg.amplitude * Math.sin(waveCfg.waveNumber * x - waveCfg.angularFrequency * time);
+  const noise_val = noise3(x * noiseCfg.scale, y * noiseCfg.scale, time * noiseCfg.timeSpeed);
+  const dx = wave_dx + noiseCfg.amplitude * (noise_val - 0.5);
   return { dx, dy: 0 };
 }
 
 export function standingWaveField(x, y, options) {
   const time = (options && options.time) || 0;
-  const s = SETTINGS.fields.standingWave;
-  const dx =
-    s.amplitude *
-    Math.sin(s.waveNumber * x) *
-    Math.cos(s.angularFrequency * time);
+  const cfg = CONFIG.fields.standingWave;
+  const dx = cfg.amplitude * Math.sin(cfg.waveNumber * x) * Math.cos(cfg.angularFrequency * time);
   return { dx, dy: 0 };
 }
 
 export function cellularFlowField(x, y, options) {
-  const cs = SETTINGS.fields.cellular.cellSize;
-  const strength = SETTINGS.fields.cellular.strength;
+  const cfg = CONFIG.fields.cellular;
+  const cs = cfg.cellSize;
+  const strength = cfg.strength;
   const cx = Math.floor(x / cs) * cs + cs / 2;
   const cy = Math.floor(y / cs) * cs + cs / 2;
   const centers = [
@@ -221,8 +199,8 @@ export function cellularFlowField(x, y, options) {
     [cx, cy + cs],
     [cx + cs, cy + cs],
   ];
-  let dx = 0,
-    dy = 0;
+  let dx = 0;
+  let dy = 0;
   for (let c of centers) {
     const rx = x - c[0];
     const ry = y - c[1];
@@ -237,7 +215,7 @@ export function cellularFlowField(x, y, options) {
 }
 
 /**
- * Simple pseudo-random number from seed (deterministic).
+ * Seeded random for deterministic values.
  */
 function seededRandom(seed) {
   const x = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
@@ -246,46 +224,35 @@ function seededRandom(seed) {
 
 /**
  * Random Walk field - each dot wanders independently.
- * Uses hash-based randomness for truly uncorrelated motion.
  */
 export function randomWalkField(x, y, options) {
   const time = (options && options.time) || 0;
   const x0 = (options && options.x0) || 0;
   const y0 = (options && options.y0) || 0;
-  const cfg = SETTINGS.fields.randomWalk || {};
+  const cfg = CONFIG.fields.randomWalk;
   const speed = cfg.speed !== undefined ? cfg.speed : 0.5;
   const turnSpeed = cfg.turnSpeed !== undefined ? cfg.turnSpeed : 0.3;
 
-  // Create unique ID for this dot
   const dotId = x0 * 1.3 + y0 * 2.7;
-
-  // Time step - direction changes smoothly over this period
-  const period = 1 / turnSpeed; // seconds per direction change
+  const period = 1 / turnSpeed;
   const timeStep = Math.floor(time / period);
-  const timeFrac = (time % period) / period; // 0 to 1 within period
+  const timeFrac = (time % period) / period;
 
-  // Get angle for current and next time step
   const angle1 = seededRandom(dotId + timeStep * 100) * Math.PI * 2;
   const angle2 = seededRandom(dotId + (timeStep + 1) * 100) * Math.PI * 2;
 
-  // Smoothly interpolate between angles (handle wrap-around)
   let angleDiff = angle2 - angle1;
   if (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
   if (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
 
-  // Smooth easing
   const ease = timeFrac * timeFrac * (3 - 2 * timeFrac);
   const angle = angle1 + angleDiff * ease;
 
-  const dx = Math.cos(angle) * speed;
-  const dy = Math.sin(angle) * speed;
-
-  return { dx, dy };
+  return { dx: Math.cos(angle) * speed, dy: Math.sin(angle) * speed };
 }
 
 /**
  * Registry of all available field functions.
- * Add new fields here to make them available in the application.
  */
 export const FIELDS = {
   randomWalk: randomWalkField,
