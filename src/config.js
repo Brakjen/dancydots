@@ -5,20 +5,20 @@
  */
 export const CONFIG = {
   // Mode: "grid" = uniform spacing, "layered" = random per-layer with depth
-  mode: "layered",
+  mode: "grid",
 
   // Current active field
-  currentField: "randomWalk",
+  currentField: "wave",
 
   // Canvas
-  backgroundColor: "#000000",
+  backgroundColor: "#010112",
   fps: 30,
 
   // Grid mode settings
   grid: {
     spacing: 25,
-    color: "#808080",
-    radius: 1,
+    color: "#393d01",
+    radius: 2,
   },
 
   // Layered mode settings

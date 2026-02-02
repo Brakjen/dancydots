@@ -3,22 +3,32 @@ import { STATE, computeState } from "./state.js";
 
 let canvas;
 let ctx;
+let container;
 const CANVAS_ID = "dotCanvas";
+const CONTAINER_ID = "canvasContainer";
 
 // Global array to hold dot positions
 export let dots = [];
 
 /**
+ * Resize the canvas to fit its container.
+ */
+function resizeCanvas() {
+  canvas.width = container.clientWidth;
+  canvas.height = container.clientHeight;
+}
+
+/**
  * Initializes the canvas element and sets up initial drawing.
  */
 export function initCanvas() {
+  container = document.getElementById(CONTAINER_ID);
   canvas = document.getElementById(CANVAS_ID);
   ctx = canvas.getContext("2d");
   ctx.imageSmoothingEnabled = true;
 
-  // Set size
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  // Set size to container
+  resizeCanvas();
 
   // Compute state from config + canvas dimensions
   computeState(canvas.width, canvas.height);
@@ -30,8 +40,7 @@ export function initCanvas() {
 
   // Handle resize
   window.addEventListener("resize", function () {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    resizeCanvas();
     computeState(canvas.width, canvas.height);
     dots = buildDotGrid();
     setCanvasBackground();
