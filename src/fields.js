@@ -1,4 +1,4 @@
-import { SETTINGS } from "./canvas.js";
+import { SETTINGS } from "./settings.js";
 
 /**
  * Shiver field function that perturbs dot positions randomly.
