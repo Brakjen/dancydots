@@ -22,6 +22,15 @@ function applyUrlParams() {
   if (field && FIELDS[field]) {
     CONFIG.currentField = field;
   }
+
+  // Embedded / iframe mode: hide UI and expose only canvas
+  const embed =
+    params.get("embed") || params.get("embedded") || params.get("noUI");
+  if (embed === "1" || embed === "true") {
+    CONFIG._embedded = true;
+  } else {
+    CONFIG._embedded = false;
+  }
 }
 
 /**
@@ -32,7 +41,13 @@ function main() {
   applyUrlParams();
   initCanvas();
   initAnimation();
-  initUI();
+  // If embedded mode requested, skip building the UI and hide sidebar
+  if (!CONFIG._embedded) {
+    initUI();
+  } else {
+    const sb = document.getElementById("sidebar");
+    if (sb) sb.style.display = "none";
+  }
 }
 
 document.addEventListener("DOMContentLoaded", main);
