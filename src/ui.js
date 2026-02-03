@@ -9,6 +9,7 @@ export function initUI() {
   // Initialize all sections
   initRefreshButton();
   initExportButton();
+  initFullscreenToggle();
   initCollapsibleSections();
   initGlobalControls();
   initFieldDropdown();
@@ -39,6 +40,25 @@ function initExportButton() {
   const btn = document.getElementById("exportBtn");
   btn.addEventListener("click", () => {
     downloadExport();
+  });
+}
+
+// ============================================
+// Fullscreen Toggle
+// ============================================
+
+function initFullscreenToggle() {
+  const btn = document.getElementById("fullscreenToggle");
+  
+  btn.addEventListener("click", () => {
+    document.body.classList.toggle("fullscreen");
+  });
+
+  // Escape key exits fullscreen
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && document.body.classList.contains("fullscreen")) {
+      document.body.classList.remove("fullscreen");
+    }
   });
 }
 

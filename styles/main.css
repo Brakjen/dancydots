@@ -14,14 +14,35 @@ body {
   background: #000;
   color: #e0e0e0;
   overflow: hidden;
-  display: flex;
+  position: relative;
 }
 
 /* ============================================
-   Sidebar
+   Canvas Container - Full viewport behind everything
+   ============================================ */
+
+#canvasContainer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+}
+
+#dotCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ============================================
+   Sidebar - Floats on top of canvas
    ============================================ */
 
 .sidebar {
+  position: relative;
+  z-index: 100;
   width: 280px;
   height: 100vh;
   background: rgba(20, 20, 25, 0.95);
@@ -30,10 +51,7 @@ body {
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
-  transition:
-    width 0.3s ease,
-    transform 0.3s ease;
-  z-index: 100;
+  transition: transform 0.3s ease;
 }
 
 /* Sidebar is always visible */
@@ -302,19 +320,41 @@ input[type="range"]::-moz-range-thumb {
 }
 
 /* ============================================
-   Canvas Container
+   Fullscreen Toggle
    ============================================ */
 
-#canvasContainer {
-  flex: 1;
-  position: relative;
-  overflow: hidden;
+.fullscreen-toggle {
+  position: fixed;
+  top: 12px;
+  left: 292px;
+  width: 32px;
+  height: 32px;
+  background: rgba(30, 30, 35, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 150;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-#dotCanvas {
-  display: block;
-  width: 100%;
-  height: 100%;
+.fullscreen-toggle:hover {
+  background: rgba(40, 40, 45, 0.8);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Fullscreen mode */
+body.fullscreen .sidebar {
+  transform: translateX(-100%);
+}
+
+body.fullscreen .fullscreen-toggle {
+  display: none;
 }
 
 /* ============================================
