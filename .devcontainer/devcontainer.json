@@ -2,7 +2,7 @@
   "name": "dancydots",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
   "customizations": {
-    "vscode": {
+      "vscode": {
       "extensions": [
         "ritwickdey.LiveServer",
         "esbenp.prettier-vscode",
@@ -10,7 +10,8 @@
         "formulahendry.auto-rename-tag",
         "christian-kohler.path-intellisense",
         "GitHub.copilot",
-        "GitHub.copilot-chat"
+        "GitHub.copilot-chat",
+        "openai.codex"
       ],
       "settings": {
         "editor.formatOnSave": true,
