@@ -1,5 +1,6 @@
 import { CONFIG, FIELD_INFO } from "./config.js";
 import { refresh } from "./canvas.js";
+import { downloadExport } from "./export.js";
 
 /**
  * Initializes all UI controls and binds them to CONFIG.
@@ -7,6 +8,7 @@ import { refresh } from "./canvas.js";
 export function initUI() {
   // Initialize all sections
   initRefreshButton();
+  initExportButton();
   initCollapsibleSections();
   initGlobalControls();
   initFieldDropdown();
@@ -26,6 +28,17 @@ function initRefreshButton() {
   const btn = document.getElementById("refreshBtn");
   btn.addEventListener("click", () => {
     refresh();
+  });
+}
+
+// ============================================
+// Export Button
+// ============================================
+
+function initExportButton() {
+  const btn = document.getElementById("exportBtn");
+  btn.addEventListener("click", () => {
+    downloadExport();
   });
 }
 

@@ -56,23 +56,37 @@ body {
   color: #fff;
 }
 
-.refresh-btn {
+.header-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.header-btn {
   background: transparent;
   border: 1px solid #444;
   color: #888;
-  font-size: 18px;
+  font-size: 12px;
   cursor: pointer;
-  padding: 4px 10px;
+  padding: 4px 8px;
   border-radius: 4px;
-  transition:
-    background 0.2s,
-    color 0.2s;
+  transition: background 0.2s, color 0.2s;
 }
 
-.refresh-btn:hover {
+.header-btn:hover {
   background: rgba(255, 255, 255, 0.1);
   color: #fff;
   border-color: #666;
+}
+
+.export-btn {
+  background: rgba(40, 80, 40, 0.3);
+  border-color: #4a6;
+}
+
+.export-btn:hover {
+  background: rgba(60, 120, 60, 0.4);
+  border-color: #5b7;
+  color: #8f8;
 }
 
 /* ============================================
