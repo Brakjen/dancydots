@@ -321,7 +321,7 @@ function serializeConfig() {
   // For vortexLattice, need to include spacing for vortex center generation
   if (fieldKey === "vortexLattice") {
     exportConfig.fields.vortexLattice = JSON.parse(
-      JSON.stringify(CONFIG.fields.vortexLattice)
+      JSON.stringify(CONFIG.fields.vortexLattice),
     );
   }
 
