@@ -2,7 +2,7 @@
   "name": "dancydots",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
   "customizations": {
-      "vscode": {
+    "vscode": {
       "extensions": [
         "ritwickdey.LiveServer",
         "esbenp.prettier-vscode",
