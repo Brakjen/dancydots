@@ -69,11 +69,11 @@ export const CONFIG = {
     },
     multiWave: {
       components: [
-        { k: 0.005, omega: 1, amplitude: 0.5, phi: 0, angle: 0 },
+        { k: 0.01, omega: 1, amplitude: 0.2, phi: 0, angle: 0 },
         {
-          k: 0.001,
-          omega: 1.2,
-          amplitude: 0.75,
+          k: 0.008,
+          omega: 1.5,
+          amplitude: 0.5,
           phi: Math.PI / 4,
           angle: Math.PI / 3,
         },

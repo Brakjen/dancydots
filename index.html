@@ -1,87 +1,93 @@
 <!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DancyDots</title>
-    <link rel="stylesheet" href="styles/main.css">
-</head>
-<body>
+    <link rel="stylesheet" href="styles/main.css" />
+  </head>
+  <body>
     <!-- Sidebar -->
     <aside id="sidebar" class="sidebar">
-        <header class="sidebar-header">
-            <h1>DancyDots</h1>
-            <button id="refreshBtn" class="refresh-btn" title="Reset grid">↻ Reset Grid</button>
-        </header>
+      <header class="sidebar-header">
+        <h1>DancyDots</h1>
+        <button id="refreshBtn" class="refresh-btn" title="Reset grid">
+          ↻ Reset Grid
+        </button>
+      </header>
 
-        <!-- Global Settings -->
-        <section class="settings-section">
-            <h2 class="section-title" data-section="global">Global</h2>
-            <div class="section-content" id="section-global">
-                <div class="control-group">
-                    <label for="mode">Mode</label>
-                    <select id="mode">
-                        <option value="layered">Layered (Depth)</option>
-                        <option value="grid">Grid (Uniform)</option>
-                    </select>
-                </div>
-                <div class="control-group">
-                    <label for="field">Field</label>
-                    <select id="field"></select>
-                    <p class="field-description" id="fieldDescription"></p>
-                </div>
-                <div class="control-group">
-                    <label for="backgroundColor">Background</label>
-                    <input type="color" id="backgroundColor" value="#000000">
-                </div>
-                <div class="control-group">
-                    <label for="fps">FPS: <span id="fpsValue">30</span></label>
-                    <input type="range" id="fps" min="10" max="60" value="30">
-                </div>
-            </div>
-        </section>
+      <!-- Global Settings -->
+      <section class="settings-section">
+        <h2 class="section-title" data-section="global">Global</h2>
+        <div class="section-content" id="section-global">
+          <div class="control-group">
+            <label for="mode">Mode</label>
+            <select id="mode">
+              <option value="layered">Layered (Depth)</option>
+              <option value="grid">Grid (Uniform)</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label for="field">Field</label>
+            <select id="field"></select>
+            <p class="field-description" id="fieldDescription"></p>
+          </div>
+          <div class="control-group">
+            <label for="backgroundColor">Background</label>
+            <input type="color" id="backgroundColor" value="#000000" />
+          </div>
+          <div class="control-group">
+            <label for="fps">FPS: <span id="fpsValue">30</span></label>
+            <input type="range" id="fps" min="10" max="60" value="30" />
+          </div>
+        </div>
+      </section>
 
-        <!-- Grid Mode Settings -->
-        <section class="settings-section" id="gridSettings">
-            <h2 class="section-title" data-section="grid">Grid Settings</h2>
-            <div class="section-content" id="section-grid">
-                <div class="control-group">
-                    <label for="gridSpacing">Spacing: <span id="gridSpacingValue">25</span></label>
-                    <input type="range" id="gridSpacing" min="5" max="100" value="25">
-                </div>
-                <div class="control-group">
-                    <label for="gridColor">Dot Color</label>
-                    <input type="color" id="gridColor" value="#808080">
-                </div>
-                <div class="control-group">
-                    <label for="gridRadius">Dot Size: <span id="gridRadiusValue">1</span></label>
-                    <input type="range" id="gridRadius" min="1" max="10" value="1">
-                </div>
-            </div>
-        </section>
+      <!-- Grid Mode Settings -->
+      <section class="settings-section" id="gridSettings">
+        <h2 class="section-title" data-section="grid">Grid Settings</h2>
+        <div class="section-content" id="section-grid">
+          <div class="control-group">
+            <label for="gridSpacing"
+              >Spacing: <span id="gridSpacingValue">25</span></label
+            >
+            <input type="range" id="gridSpacing" min="5" max="100" value="25" />
+          </div>
+          <div class="control-group">
+            <label for="gridColor">Dot Color</label>
+            <input type="color" id="gridColor" value="#808080" />
+          </div>
+          <div class="control-group">
+            <label for="gridRadius"
+              >Dot Size: <span id="gridRadiusValue">1</span></label
+            >
+            <input type="range" id="gridRadius" min="1" max="10" value="1" />
+          </div>
+        </div>
+      </section>
 
-        <!-- Layer Settings -->
-        <section class="settings-section" id="layerSettings">
-            <h2 class="section-title" data-section="layers">Layers</h2>
-            <div class="section-content" id="section-layers">
-                <div id="layerControls"></div>
-            </div>
-        </section>
+      <!-- Layer Settings -->
+      <section class="settings-section" id="layerSettings">
+        <h2 class="section-title" data-section="layers">Layers</h2>
+        <div class="section-content" id="section-layers">
+          <div id="layerControls"></div>
+        </div>
+      </section>
 
-        <!-- Field-Specific Settings -->
-        <section class="settings-section">
-            <h2 class="section-title" data-section="field">Field Settings</h2>
-            <div class="section-content" id="section-field">
-                <div id="fieldControls"></div>
-            </div>
-        </section>
+      <!-- Field-Specific Settings -->
+      <section class="settings-section">
+        <h2 class="section-title" data-section="field">Field Settings</h2>
+        <div class="section-content" id="section-field">
+          <div id="fieldControls"></div>
+        </div>
+      </section>
     </aside>
 
     <!-- Canvas -->
     <main id="canvasContainer">
-        <canvas id="dotCanvas"></canvas>
+      <canvas id="dotCanvas"></canvas>
     </main>
 
     <script type="module" src="src/main.js"></script>
-</body>
+  </body>
 </html>

@@ -103,12 +103,15 @@ function adjustColorLightness(hex, amount) {
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
 
-  const adjust = (c) => Math.max(0, Math.min(255, Math.round(c + amount * 2.55)));
+  const adjust = (c) =>
+    Math.max(0, Math.min(255, Math.round(c + amount * 2.55)));
   const nr = adjust(r);
   const ng = adjust(g);
   const nb = adjust(b);
 
-  return "#" + [nr, ng, nb].map((c) => c.toString(16).padStart(2, "0")).join("");
+  return (
+    "#" + [nr, ng, nb].map((c) => c.toString(16).padStart(2, "0")).join("")
+  );
 }
 
 /**
@@ -259,8 +262,12 @@ function drawLayeredScene(dotsArray) {
       if (softness > 0) {
         const gradientRadius = radius * Math.max(1, softness);
         const gradient = ctx.createRadialGradient(
-          dot.x, dot.y, 0,
-          dot.x, dot.y, gradientRadius
+          dot.x,
+          dot.y,
+          0,
+          dot.x,
+          dot.y,
+          gradientRadius,
         );
 
         // True Gaussian falloff

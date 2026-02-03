@@ -135,13 +135,14 @@ export function multiWaveField(x, y, options) {
     const c = comps[i];
     const k = c.k;
     const angle = c.angle !== undefined ? c.angle : (i * Math.PI * 2) / n;
-    const kx = k * Math.cos(angle);
-    const ky = k * Math.sin(angle);
-    const phase = kx * x + ky * y - c.omega * time + (c.phi || 0);
+    const phase =
+      k * (x * Math.cos(angle) + y * Math.sin(angle)) -
+      c.omega * time +
+      (c.phi || 0);
     const amp = c.amplitude || 1;
-    const cos = Math.cos(phase);
-    dx += amp * ky * cos;
-    dy += -amp * kx * cos;
+    // Move perpendicular to wave direction
+    dx += amp * Math.sin(phase) * -Math.sin(angle);
+    dy += amp * Math.sin(phase) * Math.cos(angle);
   }
   return { dx, dy };
 }
@@ -174,8 +175,14 @@ export function waveNoiseField(x, y, options) {
   const time = (options && options.time) || 0;
   const waveCfg = CONFIG.fields.wave;
   const noiseCfg = CONFIG.fields.waveNoise;
-  const wave_dx = waveCfg.amplitude * Math.sin(waveCfg.waveNumber * x - waveCfg.angularFrequency * time);
-  const noise_val = noise3(x * noiseCfg.scale, y * noiseCfg.scale, time * noiseCfg.timeSpeed);
+  const wave_dx =
+    waveCfg.amplitude *
+    Math.sin(waveCfg.waveNumber * x - waveCfg.angularFrequency * time);
+  const noise_val = noise3(
+    x * noiseCfg.scale,
+    y * noiseCfg.scale,
+    time * noiseCfg.timeSpeed,
+  );
   const dx = wave_dx + noiseCfg.amplitude * (noise_val - 0.5);
   return { dx, dy: 0 };
 }
@@ -183,7 +190,10 @@ export function waveNoiseField(x, y, options) {
 export function standingWaveField(x, y, options) {
   const time = (options && options.time) || 0;
   const cfg = CONFIG.fields.standingWave;
-  const dx = cfg.amplitude * Math.sin(cfg.waveNumber * x) * Math.cos(cfg.angularFrequency * time);
+  const dx =
+    cfg.amplitude *
+    Math.sin(cfg.waveNumber * x) *
+    Math.cos(cfg.angularFrequency * time);
   return { dx, dy: 0 };
 }
 

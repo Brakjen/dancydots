@@ -126,11 +126,13 @@ function initFieldDropdown() {
   }
 
   fieldSelect.value = CONFIG.currentField;
-  fieldDescription.textContent = FIELD_INFO[CONFIG.currentField]?.description || "";
+  fieldDescription.textContent =
+    FIELD_INFO[CONFIG.currentField]?.description || "";
 
   fieldSelect.addEventListener("change", (e) => {
     CONFIG.currentField = e.target.value;
-    fieldDescription.textContent = FIELD_INFO[CONFIG.currentField]?.description || "";
+    fieldDescription.textContent =
+      FIELD_INFO[CONFIG.currentField]?.description || "";
     initFieldControls(); // Rebuild field-specific controls
     refresh();
   });
@@ -206,7 +208,7 @@ function initLayerControls() {
           CONFIG.layers[index].count = val;
           refresh();
         },
-      })
+      }),
     );
 
     // Radius ratio (displayed as percentage)
@@ -222,7 +224,7 @@ function initLayerControls() {
           CONFIG.layers[index].radiusRatio = val / 100;
           refresh();
         },
-      })
+      }),
     );
 
     // Softness
@@ -238,7 +240,7 @@ function initLayerControls() {
           CONFIG.layers[index].softness = val;
           refresh();
         },
-      })
+      }),
     );
 
     // Speed multiplier
@@ -254,7 +256,7 @@ function initLayerControls() {
           CONFIG.layers[index].speedMultiplier = val;
           refresh();
         },
-      })
+      }),
     );
 
     // Colors (multiple color pickers)
@@ -275,7 +277,8 @@ function initLayerControls() {
       colorInput.addEventListener("input", (e) => {
         CONFIG.layers[index].colors[colorIndex] = e.target.value;
         // Update the preview swatch in header
-        header.querySelector(".layer-preview").style.background = CONFIG.layers[index].colors[0];
+        header.querySelector(".layer-preview").style.background =
+          CONFIG.layers[index].colors[0];
         refresh();
       });
       colorSwatches.appendChild(colorInput);
@@ -301,7 +304,8 @@ function initFieldControls() {
   const fieldConfig = CONFIG.fields[fieldKey];
 
   if (!fieldConfig) {
-    container.innerHTML = '<p style="color: #666; font-size: 12px;">No settings for this field.</p>';
+    container.innerHTML =
+      '<p style="color: #666; font-size: 12px;">No settings for this field.</p>';
     return;
   }
 
@@ -330,7 +334,8 @@ function initFieldControls() {
       buildCellularControls(container, fieldConfig);
       break;
     case "multiWave":
-      container.innerHTML = '<p style="color: #666; font-size: 12px;">Multi-wave uses preset components.</p>';
+      container.innerHTML =
+        '<p style="color: #666; font-size: 12px;">Multi-wave uses preset components.</p>';
       break;
   }
 }
@@ -347,7 +352,7 @@ function buildRandomWalkControls(container, config) {
       onChange: (val) => {
         CONFIG.fields.randomWalk.speed = val;
       },
-    })
+    }),
   );
 
   container.appendChild(
@@ -361,7 +366,7 @@ function buildRandomWalkControls(container, config) {
       onChange: (val) => {
         CONFIG.fields.randomWalk.turnSpeed = val;
       },
-    })
+    }),
   );
 }
 
@@ -377,7 +382,7 @@ function buildShiverControls(container, config) {
       onChange: (val) => {
         CONFIG.fields.shiver.amplitude = val;
       },
-    })
+    }),
   );
 
   container.appendChild(
@@ -391,7 +396,7 @@ function buildShiverControls(container, config) {
       onChange: (val) => {
         CONFIG.fields.shiver.restoreStrength = val;
       },
-    })
+    }),
   );
 }
 
@@ -410,7 +415,7 @@ function buildWaveControls(container, config, fieldKey) {
       onChange: (val) => {
         configRef.waveNumber = val;
       },
-    })
+    }),
   );
 
   container.appendChild(
@@ -424,7 +429,7 @@ function buildWaveControls(container, config, fieldKey) {
       onChange: (val) => {
         configRef.angularFrequency = val;
       },
-    })
+    }),
   );
 
   container.appendChild(
@@ -438,7 +443,7 @@ function buildWaveControls(container, config, fieldKey) {
       onChange: (val) => {
         configRef.amplitude = val;
       },
-    })
+    }),
   );
 }
 
@@ -454,7 +459,7 @@ function buildCurlNoiseControls(container, config) {
       onChange: (val) => {
         CONFIG.fields.curlNoise.scale = val;
       },
-    })
+    }),
   );
 
   container.appendChild(
@@ -468,7 +473,7 @@ function buildCurlNoiseControls(container, config) {
       onChange: (val) => {
         CONFIG.fields.curlNoise.amplitude = val;
       },
-    })
+    }),
   );
 
   container.appendChild(
@@ -482,7 +487,7 @@ function buildCurlNoiseControls(container, config) {
       onChange: (val) => {
         CONFIG.fields.curlNoise.timeSpeed = val;
       },
-    })
+    }),
   );
 }
 
@@ -499,7 +504,7 @@ function buildVortexLatticeControls(container, config) {
         CONFIG.fields.vortexLattice.spacing = val;
         refresh(); // Need refresh to rebuild vortex centers
       },
-    })
+    }),
   );
 
   container.appendChild(
@@ -513,7 +518,7 @@ function buildVortexLatticeControls(container, config) {
       onChange: (val) => {
         CONFIG.fields.vortexLattice.radius = val;
       },
-    })
+    }),
   );
 
   container.appendChild(
@@ -527,7 +532,7 @@ function buildVortexLatticeControls(container, config) {
       onChange: (val) => {
         CONFIG.fields.vortexLattice.strength = val;
       },
-    })
+    }),
   );
 }
 
@@ -543,7 +548,7 @@ function buildWaveNoiseControls(container, config) {
       onChange: (val) => {
         CONFIG.fields.waveNoise.scale = val;
       },
-    })
+    }),
   );
 
   container.appendChild(
@@ -557,7 +562,7 @@ function buildWaveNoiseControls(container, config) {
       onChange: (val) => {
         CONFIG.fields.waveNoise.timeSpeed = val;
       },
-    })
+    }),
   );
 
   container.appendChild(
@@ -571,7 +576,7 @@ function buildWaveNoiseControls(container, config) {
       onChange: (val) => {
         CONFIG.fields.waveNoise.amplitude = val;
       },
-    })
+    }),
   );
 }
 
@@ -587,7 +592,7 @@ function buildCellularControls(container, config) {
       onChange: (val) => {
         CONFIG.fields.cellular.cellSize = val;
       },
-    })
+    }),
   );
 
   container.appendChild(
@@ -601,7 +606,7 @@ function buildCellularControls(container, config) {
       onChange: (val) => {
         CONFIG.fields.cellular.strength = val;
       },
-    })
+    }),
   );
 }
 
