@@ -5,10 +5,10 @@
  */
 export const CONFIG = {
   // Mode: "grid" = uniform spacing, "layered" = random per-layer with depth
-  mode: "grid",
+  mode: "layered",
 
   // Current active field
-  currentField: "wave",
+  currentField: "randomWalk",
 
   // Canvas
   backgroundColor: "#010112",
@@ -32,17 +32,17 @@ export const CONFIG = {
       colors: ["#1c3232", "#291717", "#1a301a"],
     },
     {
-      count: 100,
+      count: 50,
       radiusRatio: 0.1,
       softness: 1.0,
       speedMultiplier: 1.2,
       colors: ["#1d1d40", "#492441", "#505323"],
     },
     {
-      count: 0,
+      count: 75,
       radiusRatio: 0.003,
       softness: 0.05,
-      speedMultiplier: 1.0,
+      speedMultiplier: 2.0,
       colors: ["#556666", "#665555", "#556655"],
     },
   ],
