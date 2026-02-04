@@ -1,5 +1,5 @@
 import { CONFIG, FIELD_INFO } from "./config.js";
-import { refresh } from "./canvas.js";
+import { refresh, drawScene, dots, addDotsToLayer, removeDotsFromLayer } from "./canvas.js";
 import { downloadExport } from "./export.js";
 
 /**
@@ -49,14 +49,20 @@ function initExportButton() {
 
 function initFullscreenToggle() {
   const btn = document.getElementById("fullscreenToggle");
-  
+
   btn.addEventListener("click", () => {
-    document.body.classList.toggle("fullscreen");
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      document.documentElement.requestFullscreen();
+    }
   });
 
-  // Escape key exits fullscreen
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && document.body.classList.contains("fullscreen")) {
+  // Sync CSS class with actual fullscreen state
+  document.addEventListener("fullscreenchange", () => {
+    if (document.fullscreenElement) {
+      document.body.classList.add("fullscreen");
+    } else {
       document.body.classList.remove("fullscreen");
     }
   });
@@ -113,7 +119,7 @@ function initGlobalControls() {
   bgColor.value = CONFIG.backgroundColor;
   bgColor.addEventListener("input", (e) => {
     CONFIG.backgroundColor = e.target.value;
-    refresh();
+    drawScene(dots);
   });
 
   // FPS slider
@@ -124,6 +130,17 @@ function initGlobalControls() {
   fps.addEventListener("input", (e) => {
     CONFIG.fps = parseInt(e.target.value, 10);
     fpsValue.textContent = CONFIG.fps;
+    // FPS affects animation timing, no grid rebuild needed
+  });
+
+  // Dot spacing slider (affects layered mode collision)
+  const dotSpacing = document.getElementById("dotSpacing");
+  const dotSpacingValue = document.getElementById("dotSpacingValue");
+  dotSpacing.value = CONFIG.dotSpacing;
+  dotSpacingValue.textContent = CONFIG.dotSpacing;
+  dotSpacing.addEventListener("input", (e) => {
+    CONFIG.dotSpacing = parseFloat(e.target.value);
+    dotSpacingValue.textContent = CONFIG.dotSpacing;
     refresh();
   });
 }
@@ -140,6 +157,10 @@ function updateModeVisibility() {
     layerSection.style.display = "";
   }
 }
+
+// ============================================
+// Field Dropdown
+// ============================================
 
 // ============================================
 // Field Dropdown
@@ -192,7 +213,7 @@ function initGridControls() {
   color.value = CONFIG.grid.color;
   color.addEventListener("input", (e) => {
     CONFIG.grid.color = e.target.value;
-    refresh();
+    drawScene(dots);
   });
 
   // Radius
@@ -203,7 +224,7 @@ function initGridControls() {
   radius.addEventListener("input", (e) => {
     CONFIG.grid.radius = parseFloat(e.target.value);
     radiusValue.textContent = CONFIG.grid.radius;
-    refresh();
+    drawScene(dots);
   });
 }
 
@@ -238,8 +259,16 @@ function initLayerControls() {
         step: 1,
         value: layer.count,
         onChange: (val) => {
+          const oldCount = CONFIG.layers[index].count;
+          const diff = val - oldCount;
           CONFIG.layers[index].count = val;
-          refresh();
+          
+          if (diff > 0) {
+            addDotsToLayer(index, diff);
+          } else if (diff < 0) {
+            removeDotsFromLayer(index, -diff);
+          }
+          drawScene(dots);
         },
       }),
     );
@@ -271,7 +300,7 @@ function initLayerControls() {
         value: layer.softness,
         onChange: (val) => {
           CONFIG.layers[index].softness = val;
-          refresh();
+          drawScene(dots); // Redraw only, no grid rebuild
         },
       }),
     );
@@ -287,7 +316,7 @@ function initLayerControls() {
         value: layer.speedMultiplier,
         onChange: (val) => {
           CONFIG.layers[index].speedMultiplier = val;
-          refresh();
+          // Speed affects animation only, no redraw needed
         },
       }),
     );
@@ -312,7 +341,14 @@ function initLayerControls() {
         // Update the preview swatch in header
         header.querySelector(".layer-preview").style.background =
           CONFIG.layers[index].colors[0];
-        refresh();
+        // Update existing dot colors for this layer
+        dots.forEach((dot) => {
+          if (dot.layer === index) {
+            const colors = CONFIG.layers[index].colors;
+            dot.color = colors[Math.floor(Math.random() * colors.length)];
+          }
+        });
+        drawScene(dots);
       });
       colorSwatches.appendChild(colorInput);
     });

@@ -154,7 +154,7 @@ function buildUniformGrid() {
 function getPlacementRadius(layerIndex) {
   const layerConfig = STATE.layers[layerIndex];
   if (!layerConfig) return 10;
-  return layerConfig.radius * Math.max(1, layerConfig.softness || 1) * 1.0;
+  return layerConfig.radius * Math.max(1, layerConfig.softness || 1) * CONFIG.dotSpacing;
 }
 
 /**
@@ -172,6 +172,62 @@ function checkOverlap(x, y, radius, existingDots) {
     }
   }
   return false;
+}
+
+/**
+ * Adds dots to a specific layer without rebuilding the entire grid.
+ * @param {number} layerIndex - The layer to add dots to
+ * @param {number} count - Number of dots to add
+ */
+export function addDotsToLayer(layerIndex, count) {
+  const layerConfig = STATE.layers[layerIndex];
+  if (!layerConfig) return;
+  
+  const w = canvas.width;
+  const h = canvas.height;
+  const margin = 0.3;
+  const maxAttempts = 100;
+  const placementRadius = getPlacementRadius(layerIndex);
+
+  for (let i = 0; i < count; i++) {
+    let x, y;
+    let attempts = 0;
+    let placed = false;
+
+    while (!placed && attempts < maxAttempts) {
+      x = (Math.random() - margin) * w * (1 + 2 * margin);
+      y = (Math.random() - margin) * h * (1 + 2 * margin);
+      if (!checkOverlap(x, y, placementRadius, dots)) {
+        placed = true;
+      }
+      attempts++;
+    }
+
+    dots.push({
+      x: x,
+      y: y,
+      x0: x,
+      y0: y,
+      layer: layerIndex,
+      color: pickColorWithVariation(layerConfig.colors),
+    });
+  }
+}
+
+/**
+ * Removes dots from a specific layer without rebuilding the entire grid.
+ * @param {number} layerIndex - The layer to remove dots from
+ * @param {number} count - Number of dots to remove
+ */
+export function removeDotsFromLayer(layerIndex, count) {
+  let removed = 0;
+  // Remove from the end of the array (most recently added)
+  for (let i = dots.length - 1; i >= 0 && removed < count; i--) {
+    if (dots[i].layer === layerIndex) {
+      dots.splice(i, 1);
+      removed++;
+    }
+  }
 }
 
 /**
@@ -252,7 +308,8 @@ function drawLayeredScene(dotsArray) {
   for (let layerIndex = 0; layerIndex < layers.length; layerIndex++) {
     const layerConfig = layers[layerIndex];
     const radius = layerConfig.radius;
-    const softness = layerConfig.softness || 0;
+    // Read softness from CONFIG for live updates without grid rebuild
+    const softness = CONFIG.layers[layerIndex]?.softness || 0;
 
     dotsArray.forEach(function (dot) {
       if (dot.layer !== layerIndex) return;
@@ -270,12 +327,17 @@ function drawLayeredScene(dotsArray) {
           gradientRadius,
         );
 
-        // True Gaussian falloff
+        // Bokeh-style falloff: softness controls edge sharpness
+        // Higher softness = more gradual falloff, lower = sharper ring
         const stops = 8;
+        const edgeStart = Math.max(0.3, 1 - softness); // where falloff begins
+        const edgeWidth = Math.min(0.5, softness * 0.5); // how gradual the falloff is
+        
         for (let i = 0; i <= stops; i++) {
           const t = i / stops;
-          const gaussian = Math.exp(-Math.pow(t * 2.5, 2));
-          gradient.addColorStop(t, hexToRgba(color, gaussian));
+          const ring = 0.3 + 0.7 * t; // brightness increases toward edge
+          const falloff = t < edgeStart ? 1.0 : Math.max(0, 1 - (t - edgeStart) / edgeWidth);
+          gradient.addColorStop(t, hexToRgba(color, ring * falloff));
         }
 
         ctx.fillStyle = gradient;

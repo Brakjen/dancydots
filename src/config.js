@@ -14,6 +14,9 @@ export const CONFIG = {
   backgroundColor: "#010112",
   fps: 30,
 
+  // Layered mode: dot spacing multiplier for collision (higher = more spread out)
+  dotSpacing: 1.0,
+
   // Grid mode settings
   grid: {
     spacing: 25,
@@ -25,21 +28,21 @@ export const CONFIG = {
   // radiusRatio is relative to canvas height (0.5 = 50% of height)
   layers: [
     {
-      count: 15,
-      radiusRatio: 0.5,
+      count: 10,
+      radiusRatio: 0.45,
       softness: 0.6,
       speedMultiplier: 0.8,
       colors: ["#1c3232", "#291717", "#1a301a"],
     },
     {
-      count: 50,
+      count: 25,
       radiusRatio: 0.1,
       softness: 1.0,
       speedMultiplier: 1.2,
       colors: ["#1d1d40", "#492441", "#505323"],
     },
     {
-      count: 75,
+      count: 300,
       radiusRatio: 0.003,
       softness: 0.05,
       speedMultiplier: 2.0,

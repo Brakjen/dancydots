@@ -87,8 +87,8 @@ export function initAnimation() {
 
         let speed = 1.0;
         if (CONFIG.mode === "layered" && dot.layer !== null) {
-          const layerConfig = STATE.layers[dot.layer];
-          speed = layerConfig ? layerConfig.speedMultiplier : 1.0;
+          // Read from CONFIG for live updates without grid rebuild
+          speed = CONFIG.layers[dot.layer]?.speedMultiplier || 1.0;
         }
 
         dot.vx = field.dx * speed;

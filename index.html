@@ -49,6 +49,10 @@
             <label for="fps">FPS: <span id="fpsValue">30</span></label>
             <input type="range" id="fps" min="10" max="60" value="30" />
           </div>
+          <div class="control-group">
+            <label for="dotSpacing">Dot Spacing: <span id="dotSpacingValue">1.0</span></label>
+            <input type="range" id="dotSpacing" min="0.3" max="2.5" step="0.1" value="1.0" />
+          </div>
         </div>
       </section>
 
@@ -95,7 +99,13 @@
     <!-- Canvas -->
     <main id="canvasContainer">
       <canvas id="dotCanvas"></canvas>
-      <button id="fullscreenToggle" class="fullscreen-toggle" title="Fullscreen (Esc to exit)">⛶</button>
+      <button
+        id="fullscreenToggle"
+        class="fullscreen-toggle"
+        title="Fullscreen (Esc to exit)"
+      >
+        ⛶
+      </button>
     </main>
 
     <script type="module" src="src/main.js"></script>
