@@ -838,6 +838,7 @@ function createSliderWithInput({ id, label, min, max, step, value, onChange }) {
   // Sync number input → slider
   numberInput.addEventListener("input", (e) => {
     let val = parseFloat(e.target.value);
+    if (isNaN(val)) return; // Don't update if invalid
     // Clamp to valid range
     val = Math.max(min, Math.min(max, val));
     slider.value = val;

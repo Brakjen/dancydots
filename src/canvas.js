@@ -242,7 +242,7 @@ export function addDotsToLayer(layerIndex, count) {
 
   const w = canvas.width;
   const h = canvas.height;
-  const margin = 0.3;
+  const margin = 0.05;
   const maxAttempts = 100;
   const placementRadius = getPlacementRadius(layerIndex);
 
@@ -260,13 +260,15 @@ export function addDotsToLayer(layerIndex, count) {
       attempts++;
     }
 
+    const picked = pickColorWithVariation(layerConfig.colors);
     dots.push({
       x: x,
       y: y,
       x0: x,
       y0: y,
       layer: layerIndex,
-      color: pickColorWithVariation(layerConfig.colors),
+      color: picked.color,
+      colorIndex: picked.colorIndex,
     });
   }
 }
@@ -302,8 +304,8 @@ function buildLayeredDots() {
   const layers = STATE.layers;
   const w = canvas.width;
   const h = canvas.height;
-  // Margin extends placement area beyond viewport for seamless edges
-  const margin = 0.3;
+  // Small margin (5%) to avoid dots popping in/out at edges
+  const margin = 0.05;
   const maxAttempts = 100;
 
   for (let layerIndex = 0; layerIndex < layers.length; layerIndex++) {

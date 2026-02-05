@@ -440,7 +440,8 @@ export function generateExportCode() {
     if (CONFIG.mode === "layered") {
       const w = canvas.width;
       const h = canvas.height;
-      const margin = 0.3;
+      // Small margin (5%) to avoid dots popping in/out at edges
+      const margin = 0.05;
       for (let li = 0; li < STATE.layers.length; li++) {
         const layer = STATE.layers[li];
         // Handle count=0 explicitly (don't default to 50)
@@ -620,6 +621,24 @@ export function generateExportCode() {
         dot.vy = field.dy * speed;
         dot.x += dot.vx * dt;
         dot.y += dot.vy * dt;
+
+        // Boundary conditions based on layer
+        const w = canvas.width;
+        const h = canvas.height;
+        if (w > 0 && h > 0) {
+          if (dot.layer === 2 || dot.layer === null) {
+            // Layer 3 (small dots) and grid mode: periodic boundary (wrap around)
+            dot.x = ((dot.x % w) + w) % w;
+            dot.y = ((dot.y % h) + h) % h;
+          } else {
+            // Layers 1, 2 (large dots): soft containment with bounce
+            var radius = STATE.layers[dot.layer] ? STATE.layers[dot.layer].radius : 10;
+            if (dot.x < radius) { dot.x = radius; dot.vx = Math.abs(dot.vx) * 0.5; }
+            else if (dot.x > w - radius) { dot.x = w - radius; dot.vx = -Math.abs(dot.vx) * 0.5; }
+            if (dot.y < radius) { dot.y = radius; dot.vy = Math.abs(dot.vy) * 0.5; }
+            else if (dot.y > h - radius) { dot.y = h - radius; dot.vy = -Math.abs(dot.vy) * 0.5; }
+          }
+        }
       }
       handleCollisions();
       drawScene();
