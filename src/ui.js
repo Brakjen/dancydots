@@ -25,6 +25,7 @@ export function initUI() {
   initRefreshButton();
   initExportButton();
   initFullscreenToggle();
+  initSidebarResize();
   initCollapsibleSections();
   initGlobalControls();
   initFieldDropdown();
@@ -34,6 +35,44 @@ export function initUI() {
 
   // Update visibility based on current mode
   updateModeVisibility();
+}
+
+// ============================================
+// Sidebar Resize
+// ============================================
+
+/**
+ * Initializes drag-to-resize functionality for the sidebar.
+ * Users can drag the right edge to make the sidebar wider or narrower.
+ */
+function initSidebarResize() {
+  const sidebar = document.getElementById("sidebar");
+  const handle = document.getElementById("sidebarResizeHandle");
+
+  let isDragging = false;
+
+  handle.addEventListener("mousedown", (e) => {
+    isDragging = true;
+    handle.classList.add("dragging");
+    document.body.classList.add("resizing");
+    e.preventDefault();
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (!isDragging) return;
+    // e.clientX is the mouse position from left edge of viewport
+    // That's exactly the width we want for the sidebar
+    const newWidth = e.clientX;
+    sidebar.style.width = newWidth + "px";
+  });
+
+  document.addEventListener("mouseup", () => {
+    if (isDragging) {
+      isDragging = false;
+      handle.classList.remove("dragging");
+      document.body.classList.remove("resizing");
+    }
+  });
 }
 
 // ============================================
@@ -166,6 +205,13 @@ function initGlobalControls() {
     dotSpacingValue.textContent = CONFIG.dotSpacing;
     refresh();
   });
+
+  // Collisions checkbox
+  const collisionsCheckbox = document.getElementById("collisionsEnabled");
+  collisionsCheckbox.checked = CONFIG.collisionsEnabled;
+  collisionsCheckbox.addEventListener("change", (e) => {
+    CONFIG.collisionsEnabled = e.target.checked;
+  });
 }
 
 /**
@@ -277,13 +323,13 @@ function initLayerControls() {
     const controls = document.createElement("div");
     controls.className = "layer-controls";
 
-    // Count
+    // Count (with both slider and number input)
     controls.appendChild(
-      createSlider({
+      createSliderWithInput({
         id: `layer${index}Count`,
         label: "Count",
         min: 0,
-        max: 500,
+        max: 10000,
         step: 1,
         value: layer.count,
         onChange: (val) => {
@@ -349,6 +395,24 @@ function initLayerControls() {
       }),
     );
 
+    // Draw mode dropdown
+    controls.appendChild(
+      createDropdown({
+        id: `layer${index}DrawMode`,
+        label: "Draw Mode",
+        options: [
+          { value: "solid", label: "Solid (fast)" },
+          { value: "gaussian", label: "Gaussian blur" },
+          { value: "bokeh", label: "Bokeh blur" },
+        ],
+        value: layer.drawMode || "bokeh",
+        onChange: (val) => {
+          CONFIG.layers[index].drawMode = val;
+          drawScene(dots);
+        },
+      }),
+    );
+
     // Colors (multiple color pickers)
     const colorGroup = document.createElement("div");
     colorGroup.className = "control-group";
@@ -369,11 +433,13 @@ function initLayerControls() {
         // Update the preview swatch in header
         header.querySelector(".layer-preview").style.background =
           CONFIG.layers[index].colors[0];
-        // Update existing dot colors for this layer
+        // Update existing dot colors for this layer (with colorIndex for z-ordering)
         dots.forEach((dot) => {
           if (dot.layer === index) {
             const colors = CONFIG.layers[index].colors;
-            dot.color = colors[Math.floor(Math.random() * colors.length)];
+            const idx = Math.floor(Math.random() * colors.length);
+            dot.color = colors[idx];
+            dot.colorIndex = idx;
           }
         });
         drawScene(dots);
@@ -714,8 +780,82 @@ function buildCellularControls(container, config) {
 // ============================================
 
 /**
+ * Creates a slider control with both slider and number input.
+ * Both inputs stay synced - changing one updates the other.
+ * Useful when users want precise control over a value.
+ * @param {Object} config - Slider configuration
+ * @param {string} config.id - HTML id for the input element
+ * @param {string} config.label - Display label text
+ * @param {number} config.min - Minimum value
+ * @param {number} config.max - Maximum value
+ * @param {number} config.step - Increment step size
+ * @param {number} config.value - Initial value
+ * @param {Function} config.onChange - Callback when value changes
+ * @returns {HTMLElement} Complete control group div
+ */
+function createSliderWithInput({ id, label, min, max, step, value, onChange }) {
+  const group = document.createElement("div");
+  group.className = "control-group";
+
+  const labelEl = document.createElement("label");
+  labelEl.htmlFor = id;
+  labelEl.textContent = label;
+  group.appendChild(labelEl);
+
+  // Container for slider + number input
+  const inputRow = document.createElement("div");
+  inputRow.style.display = "flex";
+  inputRow.style.gap = "8px";
+  inputRow.style.alignItems = "center";
+
+  // Slider
+  const slider = document.createElement("input");
+  slider.type = "range";
+  slider.id = id;
+  slider.min = min;
+  slider.max = max;
+  slider.step = step;
+  slider.value = value;
+  slider.style.flex = "1";
+
+  // Number input
+  const numberInput = document.createElement("input");
+  numberInput.type = "number";
+  numberInput.id = `${id}Number`;
+  numberInput.min = min;
+  numberInput.max = max;
+  numberInput.step = step;
+  numberInput.value = value;
+  numberInput.style.width = "60px";
+
+  // Sync slider → number input
+  slider.addEventListener("input", (e) => {
+    const val = parseFloat(e.target.value);
+    numberInput.value = val;
+    onChange(val);
+  });
+
+  // Sync number input → slider
+  numberInput.addEventListener("input", (e) => {
+    let val = parseFloat(e.target.value);
+    // Clamp to valid range
+    val = Math.max(min, Math.min(max, val));
+    slider.value = val;
+    onChange(val);
+  });
+
+  inputRow.appendChild(slider);
+  inputRow.appendChild(numberInput);
+  group.appendChild(inputRow);
+  return group;
+}
+
+/**
  * Creates a slider control with label and value display.
  * Automatically updates the displayed value as user drags slider.
+/**
+ * Creates a slider control with both slider and number input.
+ * Both inputs stay synced - changing one updates the other.
  * @param {Object} config - Slider configuration
  * @param {string} config.id - HTML id for the input element
  * @param {string} config.label - Display label text
@@ -732,24 +872,55 @@ function createSlider({ id, label, min, max, step, value, onChange }) {
 
   const labelEl = document.createElement("label");
   labelEl.htmlFor = id;
-  labelEl.innerHTML = `${label} <span id="${id}Value">${value}</span>`;
+  labelEl.textContent = label;
   group.appendChild(labelEl);
 
-  const input = document.createElement("input");
-  input.type = "range";
-  input.id = id;
-  input.min = min;
-  input.max = max;
-  input.step = step;
-  input.value = value;
+  // Container for slider + number input
+  const inputRow = document.createElement("div");
+  inputRow.style.display = "flex";
+  inputRow.style.gap = "8px";
+  inputRow.style.alignItems = "center";
 
-  input.addEventListener("input", (e) => {
+  // Slider
+  const slider = document.createElement("input");
+  slider.type = "range";
+  slider.id = id;
+  slider.min = min;
+  slider.max = max;
+  slider.step = step;
+  slider.value = value;
+  slider.style.flex = "1";
+
+  // Number input
+  const numberInput = document.createElement("input");
+  numberInput.type = "number";
+  numberInput.id = `${id}Number`;
+  numberInput.min = min;
+  numberInput.max = max;
+  numberInput.step = step;
+  numberInput.value = value;
+  numberInput.style.width = "60px";
+
+  // Sync slider → number input
+  slider.addEventListener("input", (e) => {
     const val = parseFloat(e.target.value);
-    document.getElementById(`${id}Value`).textContent = val;
+    numberInput.value = val;
     onChange(val);
   });
 
-  group.appendChild(input);
+  // Sync number input → slider
+  numberInput.addEventListener("input", (e) => {
+    let val = parseFloat(e.target.value);
+    if (isNaN(val)) return;
+    // Clamp to valid range
+    val = Math.max(min, Math.min(max, val));
+    slider.value = val;
+    onChange(val);
+  });
+
+  inputRow.appendChild(slider);
+  inputRow.appendChild(numberInput);
+  group.appendChild(inputRow);
   return group;
 }
 
@@ -781,5 +952,44 @@ function createColorPicker({ id, label, value, onChange }) {
   });
 
   group.appendChild(input);
+  return group;
+}
+
+/**
+ * Creates a dropdown select control.
+ * @param {Object} config - Dropdown configuration
+ * @param {string} config.id - HTML id for the select element
+ * @param {string} config.label - Display label text
+ * @param {Array} config.options - Array of {value, label} objects
+ * @param {string} config.value - Initial selected value
+ * @param {Function} config.onChange - Callback when selection changes
+ * @returns {HTMLElement} Complete control group div
+ */
+function createDropdown({ id, label, options, value, onChange }) {
+  const group = document.createElement("div");
+  group.className = "control-group";
+
+  const labelEl = document.createElement("label");
+  labelEl.htmlFor = id;
+  labelEl.textContent = label;
+  group.appendChild(labelEl);
+
+  const select = document.createElement("select");
+  select.id = id;
+
+  options.forEach((opt) => {
+    const option = document.createElement("option");
+    option.value = opt.value;
+    option.textContent = opt.label;
+    select.appendChild(option);
+  });
+
+  select.value = value;
+
+  select.addEventListener("change", (e) => {
+    onChange(e.target.value);
+  });
+
+  group.appendChild(select);
   return group;
 }

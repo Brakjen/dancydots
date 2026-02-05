@@ -299,12 +299,14 @@ function serializeConfig() {
     currentField: CONFIG.currentField,
     backgroundColor: CONFIG.backgroundColor,
     fps: CONFIG.fps,
+    collisionsEnabled: CONFIG.collisionsEnabled,
     grid: { ...CONFIG.grid },
     layers: CONFIG.layers.map((l) => ({
       count: l.count,
       radiusRatio: l.radiusRatio,
       softness: l.softness,
       speedMultiplier: l.speedMultiplier,
+      drawMode: l.drawMode || "bokeh",
       colors: [...l.colors],
     })),
     fields: {},
@@ -428,8 +430,9 @@ export function generateExportCode() {
   }
 
   function pickColor(colors) {
-    if (!colors || colors.length === 0) return CONFIG.grid.color;
-    return colors[Math.floor(Math.random() * colors.length)];
+    if (!colors || colors.length === 0) return { color: CONFIG.grid.color, colorIndex: 0 };
+    const idx = Math.floor(Math.random() * colors.length);
+    return { color: colors[idx], colorIndex: idx };
   }
 
   function buildDots() {
@@ -440,11 +443,13 @@ export function generateExportCode() {
       const margin = 0.3;
       for (let li = 0; li < STATE.layers.length; li++) {
         const layer = STATE.layers[li];
-        const count = layer.count || 50;
+        // Handle count=0 explicitly (don't default to 50)
+        const count = layer.count !== undefined ? layer.count : 50;
         for (let i = 0; i < count; i++) {
           const x = (Math.random() - margin) * w * (1 + 2 * margin);
           const y = (Math.random() - margin) * h * (1 + 2 * margin);
-          newDots.push({ x: x, y: y, x0: x, y0: y, layer: li, color: pickColor(layer.colors) });
+          const picked = pickColor(layer.colors);
+          newDots.push({ x: x, y: y, x0: x, y0: y, layer: li, color: picked.color, colorIndex: picked.colorIndex });
         }
       }
     } else {
@@ -464,42 +469,130 @@ export function generateExportCode() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     if (CONFIG.mode === "layered") {
+      // Pre-group dots by layer for O(n) iteration
+      const dotsByLayer = [];
+      for (let i = 0; i < STATE.layers.length; i++) dotsByLayer[i] = [];
+      for (let i = 0; i < dots.length; i++) {
+        const dot = dots[i];
+        if (dot.layer !== null && dot.layer < STATE.layers.length) {
+          dotsByLayer[dot.layer].push(dot);
+        }
+      }
+      // Sort each layer by colorIndex for z-ordering (first color at bottom)
+      for (let i = 0; i < dotsByLayer.length; i++) {
+        dotsByLayer[i].sort(function(a, b) { return (a.colorIndex || 0) - (b.colorIndex || 0); });
+      }
+
       for (let li = 0; li < STATE.layers.length; li++) {
         const layer = STATE.layers[li];
         const radius = layer.radius;
         const softness = layer.softness || 0;
-        dots.forEach(function(dot) {
-          if (dot.layer !== li) return;
-          const color = dot.color || CONFIG.grid.color;
-          if (softness > 0) {
-            const gr = radius * Math.max(1, softness);
-            const gradient = ctx.createRadialGradient(dot.x, dot.y, 0, dot.x, dot.y, gr);
-            const stops = 8;
-            for (let i = 0; i <= stops; i++) {
-              const t = i / stops;
-              const gaussian = Math.exp(-Math.pow(t * 2.5, 2));
-              gradient.addColorStop(t, hexToRgba(color, gaussian));
-            }
-            ctx.fillStyle = gradient;
-            ctx.beginPath();
-            ctx.arc(dot.x, dot.y, gr, 0, Math.PI * 2);
-            ctx.fill();
-          } else {
+        const drawMode = layer.drawMode || "bokeh";
+        const layerDots = dotsByLayer[li];
+
+        // Solid mode: batch all dots (fastest)
+        if (drawMode === "solid" || softness === 0) {
+          const byColor = {};
+          for (let i = 0; i < layerDots.length; i++) {
+            const dot = layerDots[i];
+            const color = dot.color || CONFIG.grid.color;
+            if (!byColor[color]) byColor[color] = [];
+            byColor[color].push(dot);
+          }
+          for (const color in byColor) {
             ctx.fillStyle = color;
             ctx.beginPath();
-            ctx.arc(dot.x, dot.y, radius, 0, Math.PI * 2);
+            const colorDots = byColor[color];
+            for (let i = 0; i < colorDots.length; i++) {
+              const dot = colorDots[i];
+              ctx.moveTo(dot.x + radius, dot.y);
+              ctx.arc(dot.x, dot.y, radius, 0, Math.PI * 2);
+            }
             ctx.fill();
           }
-        });
+          continue;
+        }
+
+        // Gradient modes
+        const gr = radius * Math.max(1, softness);
+        for (let i = 0; i < layerDots.length; i++) {
+          const dot = layerDots[i];
+          const color = dot.color || CONFIG.grid.color;
+          const gradient = ctx.createRadialGradient(dot.x, dot.y, 0, dot.x, dot.y, gr);
+          
+          if (drawMode === "gaussian") {
+            for (let s = 0; s <= 8; s++) {
+              const t = s / 8;
+              const g = Math.exp(-Math.pow(t * 2.5, 2));
+              gradient.addColorStop(t, hexToRgba(color, g));
+            }
+          } else {
+            // Bokeh
+            const edgeStart = Math.max(0.3, 1 - softness);
+            const edgeWidth = Math.min(0.5, softness * 0.5);
+            for (let s = 0; s <= 8; s++) {
+              const t = s / 8;
+              const ring = 0.3 + 0.7 * t;
+              const falloff = t < edgeStart ? 1.0 : Math.max(0, 1 - (t - edgeStart) / edgeWidth);
+              gradient.addColorStop(t, hexToRgba(color, ring * falloff));
+            }
+          }
+          ctx.fillStyle = gradient;
+          ctx.beginPath();
+          ctx.arc(dot.x, dot.y, gr, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
     } else {
+      // Grid mode: batch all dots
       ctx.fillStyle = CONFIG.grid.color;
+      ctx.beginPath();
       const radius = CONFIG.grid.radius;
-      dots.forEach(function(dot) {
-        ctx.beginPath();
+      for (let i = 0; i < dots.length; i++) {
+        const dot = dots[i];
+        ctx.moveTo(dot.x + radius, dot.y);
         ctx.arc(dot.x, dot.y, radius, 0, Math.PI * 2);
-        ctx.fill();
-      });
+      }
+      ctx.fill();
+    }
+  }
+
+  // ============================================
+  // Collision Handling
+  // ============================================
+  function getCollisionRadius(dot) {
+    if (dot.layer === null) return CONFIG.grid.radius;
+    const layer = STATE.layers[dot.layer];
+    if (!layer) return CONFIG.grid.radius;
+    return layer.radius * Math.max(1, layer.softness || 1) * 0.6;
+  }
+
+  function handleCollisions() {
+    if (CONFIG.mode !== "layered" || !CONFIG.collisionsEnabled) return;
+    const len = dots.length;
+    for (let i = 0; i < len; i++) {
+      const dotA = dots[i];
+      const radiusA = getCollisionRadius(dotA);
+      for (let j = i + 1; j < len; j++) {
+        const dotB = dots[j];
+        const radiusB = getCollisionRadius(dotB);
+        const dx = dotB.x - dotA.x;
+        const dy = dotB.y - dotA.y;
+        const distSq = dx * dx + dy * dy;
+        const minDist = radiusA + radiusB;
+        if (distSq < minDist * minDist && distSq > 0) {
+          const dist = Math.sqrt(distSq);
+          const overlap = minDist - dist;
+          const nx = dx / dist;
+          const ny = dy / dist;
+          const pushX = nx * overlap * 0.5;
+          const pushY = ny * overlap * 0.5;
+          dotA.x -= pushX;
+          dotA.y -= pushY;
+          dotB.x += pushX;
+          dotB.y += pushY;
+        }
+      }
     }
   }
 
@@ -511,7 +604,11 @@ export function generateExportCode() {
   function animate(timestamp) {
     const timeInSeconds = timestamp / 1000;
     if (timestamp - lastUpdate >= STATE.animationInterval) {
-      dots.forEach(function(dot) {
+      // Delta time: normalized to 60fps baseline for consistent speed
+      const dt = ((timestamp - lastUpdate) / 1000) * 60;
+
+      for (let i = 0; i < dots.length; i++) {
+        const dot = dots[i];
         const options = { x0: dot.x0, y0: dot.y0, time: timeInSeconds };
         const field = fieldFn(dot.x, dot.y, options);
         let speed = 1.0;
@@ -519,9 +616,12 @@ export function generateExportCode() {
           const layerConfig = STATE.layers[dot.layer];
           speed = layerConfig ? layerConfig.speedMultiplier : 1.0;
         }
-        dot.x += field.dx * speed;
-        dot.y += field.dy * speed;
-      });
+        dot.vx = field.dx * speed;
+        dot.vy = field.dy * speed;
+        dot.x += dot.vx * dt;
+        dot.y += dot.vy * dt;
+      }
+      handleCollisions();
       drawScene();
       lastUpdate = timestamp;
     }

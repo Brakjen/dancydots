@@ -44,6 +44,8 @@ body {
   position: relative;
   z-index: 100;
   width: 280px;
+  min-width: 200px;
+  max-width: 500px;
   height: 100vh;
   background: rgba(20, 20, 25, 0.95);
   border-right: 1px solid #333;
@@ -51,10 +53,31 @@ body {
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
-  transition: transform 0.3s ease;
 }
 
-/* Sidebar is always visible */
+/* Sidebar resize handle */
+.sidebar-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: ew-resize;
+  background: transparent;
+  transition: background 0.2s ease;
+  z-index: 101;
+}
+
+.sidebar-resize-handle:hover,
+.sidebar-resize-handle.dragging {
+  background: rgba(100, 150, 255, 0.5);
+}
+
+/* Prevent text selection while dragging */
+body.resizing {
+  user-select: none;
+  cursor: ew-resize;
+}
 
 .sidebar-header {
   display: flex;

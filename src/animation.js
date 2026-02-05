@@ -57,6 +57,7 @@ function getCollisionRadius(dot) {
  */
 function handleCollisions(dotsArray) {
   if (CONFIG.mode !== "layered") return;
+  if (!CONFIG.collisionsEnabled) return;
 
   const len = dotsArray.length;
   for (let i = 0; i < len; i++) {
@@ -119,7 +120,7 @@ function handleCollisions(dotsArray) {
  * Uses requestAnimationFrame for smooth 60fps browser rendering,
  * but only updates physics/positions at user-specified FPS (default 30)
  * to reduce computation cost.
- * 
+ *
  * Delta-time scaling ensures movement speed is independent of FPS.
  */
 export function initAnimation() {

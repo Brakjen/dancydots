@@ -27,6 +27,9 @@ export const CONFIG = {
   // Only affects initial placement, not visual appearance
   dotSpacing: 1.0,
 
+  // Enable/disable collision detection (expensive for many particles)
+  collisionsEnabled: true,
+
   // Grid mode settings
   // Creates uniform lattice of dots with regular spacing
   grid: {
@@ -39,12 +42,14 @@ export const CONFIG = {
   // Creates depth effect with 3 layers of different-sized dots
   // radiusRatio is relative to canvas height (0.5 = 50% of height)
   // Larger dots = background layer (farther away), smaller = foreground
+  // drawMode: "solid" (fast), "gaussian" (smooth blur), "bokeh" (lens blur)
   layers: [
     {
       count: 10, // number of dots in this layer
       radiusRatio: 0.45, // dot size as fraction of canvas height
       softness: 0.6, // blur amount (0=sharp, 1=very blurred)
       speedMultiplier: 0.8, // animation speed (creates parallax when varied)
+      drawMode: "bokeh", // rendering style
       colors: ["#1c3232", "#291717", "#1a301a"], // randomly chosen per dot
     },
     {
@@ -52,6 +57,7 @@ export const CONFIG = {
       radiusRatio: 0.1,
       softness: 1.0,
       speedMultiplier: 1.2,
+      drawMode: "bokeh",
       colors: ["#1d1d40", "#492441", "#505323"],
     },
     {
@@ -59,6 +65,7 @@ export const CONFIG = {
       radiusRatio: 0.003,
       softness: 0.05,
       speedMultiplier: 2.0,
+      drawMode: "solid", // solid is faster for many small dots
       colors: ["#556666", "#665555", "#556655"],
     },
   ],

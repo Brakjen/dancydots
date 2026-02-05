@@ -115,12 +115,18 @@ function hexToRgba(hex, alpha) {
 
 /**
  * Picks a random color from array and applies slight variation.
+ * Returns both the color and its index for z-ordering.
+ * @param {Array} colors - Array of hex color strings
+ * @returns {Object} { color: string, colorIndex: number }
  */
 function pickColorWithVariation(colors) {
-  if (!colors || colors.length === 0) return CONFIG.grid.color;
-  const base = colors[Math.floor(Math.random() * colors.length)];
+  if (!colors || colors.length === 0) {
+    return { color: CONFIG.grid.color, colorIndex: 0 };
+  }
+  const idx = Math.floor(Math.random() * colors.length);
+  const base = colors[idx];
   const variation = (Math.random() - 0.5) * 10;
-  return adjustColorLightness(base, variation);
+  return { color: adjustColorLightness(base, variation), colorIndex: idx };
 }
 
 /**
@@ -165,10 +171,10 @@ function buildUniformGrid() {
   const newDots = [];
   const spacing = CONFIG.grid.spacing;
   // Start beyond left edge to fill entire visible area
-  const startOffset = -canvas.width * 0.5;
+  const startOffset = -canvas.width * 0.2;
 
-  for (let x = startOffset; x < canvas.width * 1.5; x += spacing) {
-    for (let y = startOffset; y < canvas.height * 1.5; y += spacing) {
+  for (let x = startOffset; x < canvas.width * 1.2; x += spacing) {
+    for (let y = startOffset; y < canvas.height * 1.2; y += spacing) {
       newDots.push({
         x: x,
         y: y,
@@ -319,13 +325,15 @@ function buildLayeredDots() {
         attempts++;
       }
 
+      const picked = pickColorWithVariation(layerConfig.colors);
       newDots.push({
         x: x,
         y: y,
         x0: x,
         y0: y,
         layer: layerIndex,
-        color: pickColorWithVariation(layerConfig.colors),
+        color: picked.color,
+        colorIndex: picked.colorIndex,
       });
     }
   }
@@ -359,63 +367,112 @@ function drawGridScene(dotsArray) {
 }
 
 /**
- * Draws layered dots with gradients.
+ * Draws layered dots with various rendering modes.
+ * drawMode options:
+ *   - "solid": Simple filled circles (fastest)
+ *   - "gaussian": Smooth center-weighted blur
+ *   - "bokeh": Lens-style blur with bright ring edge
+ *
+ * Performance optimization: Pre-group dots by layer to avoid
+ * iterating all dots for each layer (O(n*layers) → O(n))
  */
 function drawLayeredScene(dotsArray) {
   const layers = STATE.layers;
 
+  // Pre-group dots by layer index for O(n) iteration instead of O(n*layers)
+  const dotsByLayer = [];
+  for (let i = 0; i < layers.length; i++) {
+    dotsByLayer[i] = [];
+  }
+  for (let i = 0; i < dotsArray.length; i++) {
+    const dot = dotsArray[i];
+    if (dot.layer !== null && dot.layer < layers.length) {
+      dotsByLayer[dot.layer].push(dot);
+    }
+  }
+  // Sort each layer by colorIndex for z-ordering (first color at bottom)
+  for (let i = 0; i < dotsByLayer.length; i++) {
+    dotsByLayer[i].sort((a, b) => (a.colorIndex || 0) - (b.colorIndex || 0));
+  }
+
   for (let layerIndex = 0; layerIndex < layers.length; layerIndex++) {
     const layerConfig = layers[layerIndex];
     const radius = layerConfig.radius;
-    // Read softness from CONFIG for live updates without grid rebuild
+    // Read from CONFIG for live updates without grid rebuild
     const softness = CONFIG.layers[layerIndex]?.softness || 0;
+    const drawMode = CONFIG.layers[layerIndex]?.drawMode || "bokeh";
+    const layerDots = dotsByLayer[layerIndex];
 
-    dotsArray.forEach(function (dot) {
-      if (dot.layer !== layerIndex) return;
+    // Solid mode: batch all dots in one path (much faster)
+    if (drawMode === "solid" || softness === 0) {
+      // Group by color for batching
+      const byColor = {};
+      for (let i = 0; i < layerDots.length; i++) {
+        const dot = layerDots[i];
+        const color = dot.color || CONFIG.grid.color;
+        if (!byColor[color]) byColor[color] = [];
+        byColor[color].push(dot);
+      }
 
+      // Draw each color batch in a single path
+      for (const color in byColor) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        const colorDots = byColor[color];
+        for (let i = 0; i < colorDots.length; i++) {
+          const dot = colorDots[i];
+          ctx.moveTo(dot.x + radius, dot.y);
+          ctx.arc(dot.x, dot.y, radius, 0, Math.PI * 2);
+        }
+        ctx.fill();
+      }
+      continue;
+    }
+
+    // Gradient modes - must draw individually
+    const gradientRadius = radius * Math.max(1, softness);
+
+    for (let i = 0; i < layerDots.length; i++) {
+      const dot = layerDots[i];
       const color = dot.color || CONFIG.grid.color;
 
-      if (softness > 0) {
-        const gradientRadius = radius * Math.max(1, softness);
-        const gradient = ctx.createRadialGradient(
-          dot.x,
-          dot.y,
-          0,
-          dot.x,
-          dot.y,
-          gradientRadius,
-        );
+      const gradient = ctx.createRadialGradient(
+        dot.x,
+        dot.y,
+        0,
+        dot.x,
+        dot.y,
+        gradientRadius,
+      );
 
-        // Bokeh-style falloff simulates out-of-focus highlights from camera lenses
-        // Unlike Gaussian blur (smooth center-to-edge), bokeh has:
-        //   - Brighter ring near edge ("soap bubble" effect)
-        //   - Sharp cutoff at edge (not infinite fade)
-        // Softness controls edge sharpness:
-        //   - High softness (0.8-1.0) = gradual, diffuse
-        //   - Low softness (0.1-0.3) = sharp ring, tight definition
+      if (drawMode === "gaussian") {
+        // Gaussian: smooth center-weighted falloff
         const stops = 8;
-        const edgeStart = Math.max(0.3, 1 - softness); // where falloff begins (0-1)
-        const edgeWidth = Math.min(0.5, softness * 0.5); // falloff gradient width
+        for (let s = 0; s <= stops; s++) {
+          const t = s / stops;
+          const gaussian = Math.exp(-Math.pow(t * 2.5, 2));
+          gradient.addColorStop(t, hexToRgba(color, gaussian));
+        }
+      } else {
+        // Bokeh: lens-style blur with bright ring edge
+        const stops = 8;
+        const edgeStart = Math.max(0.3, 1 - softness);
+        const edgeWidth = Math.min(0.5, softness * 0.5);
 
-        for (let i = 0; i <= stops; i++) {
-          const t = i / stops; // position in gradient (0 = center, 1 = edge)
-          const ring = 0.3 + 0.7 * t; // brightness increases toward edge
+        for (let s = 0; s <= stops; s++) {
+          const t = s / stops;
+          const ring = 0.3 + 0.7 * t;
           const falloff =
             t < edgeStart ? 1.0 : Math.max(0, 1 - (t - edgeStart) / edgeWidth);
           gradient.addColorStop(t, hexToRgba(color, ring * falloff));
         }
-
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(dot.x, dot.y, gradientRadius, 0, Math.PI * 2);
-        ctx.fill();
-      } else {
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.arc(dot.x, dot.y, radius, 0, Math.PI * 2);
-        ctx.fill();
       }
-    });
+
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(dot.x, dot.y, gradientRadius, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 }
 
