@@ -1,5 +1,19 @@
+/**
+ * UI module - handles all sidebar controls and user interaction.
+ * 
+ * Key optimization:
+ * - Visual-only changes (colors, softness) call drawScene() for instant feedback
+ * - Structural changes (count, size, spacing) call refresh() to rebuild grid
+ * - Animation parameters (speed, FPS) update config only, no redraw needed
+ */
 import { CONFIG, FIELD_INFO } from "./config.js";
-import { refresh, drawScene, dots, addDotsToLayer, removeDotsFromLayer } from "./canvas.js";
+import {
+  refresh,
+  drawScene,
+  dots,
+  addDotsToLayer,
+  removeDotsFromLayer,
+} from "./canvas.js";
 import { downloadExport } from "./export.js";
 
 /**
@@ -47,6 +61,13 @@ function initExportButton() {
 // Fullscreen Toggle
 // ============================================
 
+/**
+ * Initializes fullscreen toggle button.
+ * Uses browser's Fullscreen API to hide all UI chrome.
+ * - Click button: enter fullscreen
+ * - Press Escape: browser automatically exits
+ * - fullscreenchange event: sync CSS class for sidebar visibility
+ */
 function initFullscreenToggle() {
   const btn = document.getElementById("fullscreenToggle");
 
@@ -145,6 +166,11 @@ function initGlobalControls() {
   });
 }
 
+/**
+ * Shows/hides UI sections based on current mode.
+ * Grid mode: show grid settings, hide layer settings
+ * Layered mode: show layer settings, hide grid settings
+ */
 function updateModeVisibility() {
   const gridSection = document.getElementById("gridSettings");
   const layerSection = document.getElementById("layerSettings");
@@ -262,7 +288,7 @@ function initLayerControls() {
           const oldCount = CONFIG.layers[index].count;
           const diff = val - oldCount;
           CONFIG.layers[index].count = val;
-          
+
           if (diff > 0) {
             addDotsToLayer(index, diff);
           } else if (diff < 0) {
@@ -682,9 +708,21 @@ function buildCellularControls(container, config) {
 // ============================================
 // Control Factory Functions
 // ============================================
+// Helper Functions for Creating Controls
+// ============================================
 
 /**
  * Creates a slider control with label and value display.
+ * Automatically updates the displayed value as user drags slider.
+ * @param {Object} config - Slider configuration
+ * @param {string} config.id - HTML id for the input element
+ * @param {string} config.label - Display label text
+ * @param {number} config.min - Minimum slider value
+ * @param {number} config.max - Maximum slider value
+ * @param {number} config.step - Increment step size
+ * @param {number} config.value - Initial value
+ * @param {Function} config.onChange - Callback when value changes, receives new value
+ * @returns {HTMLElement} Complete control group div
  */
 function createSlider({ id, label, min, max, step, value, onChange }) {
   const group = document.createElement("div");
@@ -715,6 +753,12 @@ function createSlider({ id, label, min, max, step, value, onChange }) {
 
 /**
  * Creates a color picker control.
+ * @param {Object} config - Color picker configuration
+ * @param {string} config.id - HTML id for the input element
+ * @param {string} config.label - Display label text
+ * @param {string} config.value - Initial color (hex string)
+ * @param {Function} config.onChange - Callback when color changes, receives new hex string
+ * @returns {HTMLElement} Complete control group div
  */
 function createColorPicker({ id, label, value, onChange }) {
   const group = document.createElement("div");

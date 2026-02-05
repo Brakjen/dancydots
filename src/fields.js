@@ -1,8 +1,29 @@
+/**
+ * Vector field implementations.
+ * 
+ * Each field function takes (x, y, options) and returns {dx, dy}
+ * representing the velocity vector at that point.
+ * 
+ * options typically contains:
+ *   - x0, y0: dot's home position (for restoration forces)
+ *   - time: seconds since page load (for time-varying fields)
+ */
 import { CONFIG } from "./config.js";
 import { STATE } from "./state.js";
 
 /**
  * Shiver field - random jitter with restoration force.
+ * Creates a "breathing" or "shimmering" effect where dots
+ * vibrate around their home position.
+ * 
+ * - Random displacement creates jitter
+ * - Restoration force pulls dots back toward (x0, y0)
+ * - Penalty reduces jitter when far from home
+ * 
+ * @param {number} x - Current x position
+ * @param {number} y - Current y position
+ * @param {Object} options - Field options {x0, y0, time}
+ * @returns {Object} Velocity vector {dx, dy}
  */
 export function shiverField(x, y, options) {
   const x0 = options.x0;
@@ -33,6 +54,17 @@ export function shiverField(x, y, options) {
 
 /**
  * Traveling wave field.
+ * Creates a horizontal traveling wave (like ocean waves).
+ * Dots move in sinusoidal pattern that propagates left-to-right.
+ * 
+ * Wave equation: displacement = amplitude * sin(k*x - omega*t)
+ * - k (waveNumber): spatial frequency (smaller = longer wavelength)
+ * - omega (angularFrequency): temporal frequency (smaller = slower)
+ * 
+ * @param {number} x - Current x position
+ * @param {number} y - Current y position
+ * @param {Object} options - Field options {time}
+ * @returns {Object} Velocity vector {dx, dy}
  */
 export function waveField(x, y, options) {
   const time = options.time;
@@ -48,12 +80,22 @@ export function waveField(x, y, options) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Value-noise implementation (3D) */
+/* Value-noise implementation (3D)                                    */
+/* Used for organic, smoothly-varying fields like curl noise         */
 /* ------------------------------------------------------------------ */
+
+/**
+ * Fade function for smooth interpolation (smoothstep).
+ * Returns 0 at t=0, 1 at t=1, with smooth S-curve in between.
+ */
 function fade(t) {
   return t * t * t * (t * (t * 6 - 15) + 10);
 }
 
+/**
+ * Hash function for pseudo-random values.
+ * Given integer coordinates, returns deterministic random number.
+ */
 function hash3(i, j, k) {
   let n = i + j * 57 + k * 131;
   n = (n << 13) ^ n;
@@ -61,6 +103,16 @@ function hash3(i, j, k) {
   return nn;
 }
 
+/**
+ * 3D value noise function.
+ * Returns smoothly-varying random values in [0,1] based on (x, y, t).
+ * Uses trilinear interpolation between corner values.
+ * 
+ * @param {number} x - X coordinate
+ * @param {number} y - Y coordinate  
+ * @param {number} t - Time coordinate (for animation)
+ * @returns {number} Noise value in range [0, 1]
+ */
 function noise3(x, y, t) {
   const xi = Math.floor(x);
   const yi = Math.floor(y);
@@ -102,9 +154,26 @@ function noise3(x, y, t) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Field implementations */
+/* Field implementations                                              */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Curl noise field - creates organic, turbulent flow.
+ * 
+ * Uses the curl (rotation) of a noise field to create divergence-free flow.
+ * This ensures dots don't bunch up or spread apart unnaturally.
+ * 
+ * Mathematical background:
+ *   Given scalar field f(x,y,t):
+ *   curl = (∂f/∂y, -∂f/∂x)
+ * 
+ * Result: smooth, swirling patterns like smoke or fluid.
+ * 
+ * @param {number} x - Current x position
+ * @param {number} y - Current y position
+ * @param {Object} options - Field options {time}
+ * @returns {Object} Velocity vector {dx, dy}
+ */
 export function curlNoiseField(x, y, options) {
   const time = (options && options.time) || 0;
   const cfg = CONFIG.fields.curlNoise;

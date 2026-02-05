@@ -1,3 +1,20 @@
+/**
+ * DancyDots - Animated dot field backgrounds
+ * 
+ * Entry point for the application.
+ * Initializes canvas, animation loop, and UI controls.
+ * 
+ * Architecture:
+ * - main.js: bootstraps the app, handles URL params
+ * - config.js: user-editable settings (colors, speeds, etc.)
+ * - state.js: computed values (pixel sizes, animation intervals)
+ * - canvas.js: rendering and dot placement
+ * - animation.js: animation loop and physics
+ * - fields.js: vector field implementations (movement patterns)
+ * - ui.js: sidebar controls and event handlers
+ * - export.js: code generation for standalone HTML
+ */
+
 // Import necessary modules
 import { initCanvas } from "./canvas.js";
 import { initAnimation } from "./animation.js";
@@ -7,6 +24,10 @@ import { FIELDS } from "./fields.js";
 
 /**
  * Parses URL parameters and applies them to CONFIG.
+ * Supports:
+ * - mode=grid|layered: Set rendering mode
+ * - field=<fieldName>: Set active vector field
+ * - embed=1|true: Hide UI for iframe embedding
  */
 function applyUrlParams() {
   const params = new URLSearchParams(window.location.search);

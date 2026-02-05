@@ -2,6 +2,11 @@
  * User-editable configuration.
  * This is what the UI will bind to.
  * All values here are static/ratios — no computed values.
+ * 
+ * Architecture note:
+ * - CONFIG holds raw user settings (ratios, colors, speeds)
+ * - STATE holds computed values (pixel sizes, animation intervals)
+ * - Rendering and animation read from both as needed
  */
 export const CONFIG = {
   // Mode: "grid" = uniform spacing, "layered" = random per-layer with depth
@@ -10,29 +15,37 @@ export const CONFIG = {
   // Current active field
   currentField: "randomWalk",
 
-  // Canvas
+  // Canvas background color (hex)
   backgroundColor: "#010112",
+  
+  // Target frames per second (10-60)
+  // Lower = better performance, higher = smoother animation
   fps: 30,
 
-  // Layered mode: dot spacing multiplier for collision (higher = more spread out)
+  // Layered mode: dot spacing multiplier for collision (0.3-2.5)
+  // Higher = more spread out, lower = allow more overlap
+  // Only affects initial placement, not visual appearance
   dotSpacing: 1.0,
 
   // Grid mode settings
+  // Creates uniform lattice of dots with regular spacing
   grid: {
-    spacing: 25,
-    color: "#393d01",
-    radius: 2,
+    spacing: 25,      // pixels between dots
+    color: "#393d01", // hex color for all dots
+    radius: 2,        // dot size in pixels
   },
 
   // Layered mode settings
+  // Creates depth effect with 3 layers of different-sized dots
   // radiusRatio is relative to canvas height (0.5 = 50% of height)
+  // Larger dots = background layer (farther away), smaller = foreground
   layers: [
     {
-      count: 10,
-      radiusRatio: 0.45,
-      softness: 0.6,
-      speedMultiplier: 0.8,
-      colors: ["#1c3232", "#291717", "#1a301a"],
+      count: 10,              // number of dots in this layer
+      radiusRatio: 0.45,      // dot size as fraction of canvas height
+      softness: 0.6,          // blur amount (0=sharp, 1=very blurred)
+      speedMultiplier: 0.8,   // animation speed (creates parallax when varied)
+      colors: ["#1c3232", "#291717", "#1a301a"], // randomly chosen per dot
     },
     {
       count: 25,
@@ -51,6 +64,8 @@ export const CONFIG = {
   ],
 
   // Field-specific settings
+  // Each vector field type has its own parameters
+  // Fields control how dots move through space
   fields: {
     randomWalk: {
       speed: 1,

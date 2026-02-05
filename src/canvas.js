@@ -1,3 +1,24 @@
+/**
+ * Canvas rendering and dot placement module.
+ * 
+ * Responsibilities:
+ * - Initialize and manage HTML canvas element
+ * - Build dot grids (uniform or layered)
+ * - Render dots with bokeh-style blur
+ * - Handle canvas resizing
+ * 
+ * Rendering pipeline:
+ * 1. Clear canvas with background color
+ * 2. For each layer (back to front):
+ *    a. For each dot in that layer:
+ *       - Create radial gradient with bokeh falloff
+ *       - Draw circle at dot position
+ * 
+ * Visual effects:
+ * - Bokeh blur: Simulates camera lens out-of-focus highlights
+ * - Layer ordering: Larger dots rendered first (background)
+ * - Color variation: Slight randomness for organic look
+ */
 import { CONFIG } from "./config.js";
 import { STATE, computeState } from "./state.js";
 
@@ -7,7 +28,15 @@ let container;
 const CANVAS_ID = "dotCanvas";
 const CONTAINER_ID = "canvasContainer";
 
-// Global array to hold dot positions
+/**
+ * Global array to hold dot positions.
+ * Each dot has properties:
+ * - x, y: current position
+ * - x0, y0: initial/home position
+ * - vx, vy: velocity (set during animation)
+ * - layer: layer index (null for grid mode)
+ * - color: hex color string
+ */
 export let dots = [];
 
 /**
@@ -127,10 +156,15 @@ export function buildDotGrid() {
 
 /**
  * Builds uniform grid of dots (grid mode).
+ * Creates dots in a regular grid pattern with spacing between them.
+ * Grid extends beyond viewport (by 0.5x width/height) to ensure
+ * smooth scrolling/panning without visible edges.
+ * @returns {Array} Array of dot objects
  */
 function buildUniformGrid() {
   const newDots = [];
   const spacing = CONFIG.grid.spacing;
+  // Start beyond left edge to fill entire visible area
   const startOffset = -canvas.width * 0.5;
 
   for (let x = startOffset; x < canvas.width * 1.5; x += spacing) {
@@ -150,15 +184,31 @@ function buildUniformGrid() {
 
 /**
  * Gets collision radius for a dot during placement.
+ * Collision radius is larger than visual radius to prevent overlap.
+ * Formula: base_radius * softness_multiplier * spacing_multiplier
+ * - Softness affects visual blur, so larger softness = larger collision zone
+ * - dotSpacing allows user to control packing density
+ * @param {number} layerIndex - Index of the layer
+ * @returns {number} Collision radius in pixels
  */
 function getPlacementRadius(layerIndex) {
   const layerConfig = STATE.layers[layerIndex];
   if (!layerConfig) return 10;
-  return layerConfig.radius * Math.max(1, layerConfig.softness || 1) * CONFIG.dotSpacing;
+  return (
+    layerConfig.radius *
+    Math.max(1, layerConfig.softness || 1) *
+    CONFIG.dotSpacing
+  );
 }
 
 /**
  * Checks if a position overlaps with any existing dots.
+ * Uses circle-circle collision detection (distance between centers).
+ * @param {number} x - X coordinate to check
+ * @param {number} y - Y coordinate to check
+ * @param {number} radius - Collision radius of new dot
+ * @param {Array} existingDots - Array of already-placed dots
+ * @returns {boolean} True if position overlaps, false if clear
  */
 function checkOverlap(x, y, radius, existingDots) {
   for (let i = 0; i < existingDots.length; i++) {
@@ -167,6 +217,7 @@ function checkOverlap(x, y, radius, existingDots) {
     const dx = x - other.x;
     const dy = y - other.y;
     const minDist = radius + otherRadius;
+    // Use squared distance to avoid expensive sqrt
     if (dx * dx + dy * dy < minDist * minDist) {
       return true;
     }
@@ -182,7 +233,7 @@ function checkOverlap(x, y, radius, existingDots) {
 export function addDotsToLayer(layerIndex, count) {
   const layerConfig = STATE.layers[layerIndex];
   if (!layerConfig) return;
-  
+
   const w = canvas.width;
   const h = canvas.height;
   const margin = 0.3;
@@ -232,12 +283,20 @@ export function removeDotsFromLayer(layerIndex, count) {
 
 /**
  * Builds random dots per layer (layered mode).
+ * Uses Poisson-disc-like sampling to place dots without overlap.
+ * For each dot:
+ *   1. Try random position
+ *   2. Check if it overlaps existing dots
+ *   3. If overlap, retry up to maxAttempts
+ *   4. Place anyway if max attempts reached (ensures count is met)
+ * @returns {Array} Array of dot objects sorted by layer
  */
 function buildLayeredDots() {
   const newDots = [];
   const layers = STATE.layers;
   const w = canvas.width;
   const h = canvas.height;
+  // Margin extends placement area beyond viewport for seamless edges
   const margin = 0.3;
   const maxAttempts = 100;
 
@@ -327,16 +386,22 @@ function drawLayeredScene(dotsArray) {
           gradientRadius,
         );
 
-        // Bokeh-style falloff: softness controls edge sharpness
-        // Higher softness = more gradual falloff, lower = sharper ring
+        // Bokeh-style falloff simulates out-of-focus highlights from camera lenses
+        // Unlike Gaussian blur (smooth center-to-edge), bokeh has:
+        //   - Brighter ring near edge ("soap bubble" effect)
+        //   - Sharp cutoff at edge (not infinite fade)
+        // Softness controls edge sharpness:
+        //   - High softness (0.8-1.0) = gradual, diffuse
+        //   - Low softness (0.1-0.3) = sharp ring, tight definition
         const stops = 8;
-        const edgeStart = Math.max(0.3, 1 - softness); // where falloff begins
-        const edgeWidth = Math.min(0.5, softness * 0.5); // how gradual the falloff is
-        
+        const edgeStart = Math.max(0.3, 1 - softness); // where falloff begins (0-1)
+        const edgeWidth = Math.min(0.5, softness * 0.5); // falloff gradient width
+
         for (let i = 0; i <= stops; i++) {
-          const t = i / stops;
+          const t = i / stops; // position in gradient (0 = center, 1 = edge)
           const ring = 0.3 + 0.7 * t; // brightness increases toward edge
-          const falloff = t < edgeStart ? 1.0 : Math.max(0, 1 - (t - edgeStart) / edgeWidth);
+          const falloff =
+            t < edgeStart ? 1.0 : Math.max(0, 1 - (t - edgeStart) / edgeWidth);
           gradient.addColorStop(t, hexToRgba(color, ring * falloff));
         }
 
