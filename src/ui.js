@@ -24,17 +24,51 @@ export function initUI() {
   // Initialize all sections
   initRefreshButton();
   initExportButton();
-  initFullscreenToggle();
   initSidebarResize();
+  initFullscreenChangeListener();
   initCollapsibleSections();
   initGlobalControls();
   initFieldDropdown();
   initGridControls();
   initLayerControls();
   initFieldControls();
+  initKeyboardShortcuts();
 
   // Update visibility based on current mode
   updateModeVisibility();
+}
+
+// ============================================
+// Keyboard Shortcuts
+// ============================================
+
+/**
+ * Initializes global keyboard shortcuts.
+ * - f: Toggle fullscreen
+ * - r: Refresh/reset grid
+ * - e: Export and download
+ */
+function initKeyboardShortcuts() {
+  document.addEventListener("keydown", (e) => {
+    // Ignore if user is typing in an input field
+    if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+
+    switch (e.key.toLowerCase()) {
+      case "f":
+        if (document.fullscreenElement) {
+          document.exitFullscreen();
+        } else {
+          document.documentElement.requestFullscreen();
+        }
+        break;
+      case "r":
+        refresh();
+        break;
+      case "e":
+        downloadExport();
+        break;
+    }
+  });
 }
 
 // ============================================
@@ -98,28 +132,14 @@ function initExportButton() {
 }
 
 // ============================================
-// Fullscreen Toggle
+// Fullscreen Change Listener
 // ============================================
 
 /**
- * Initializes fullscreen toggle button.
- * Uses browser's Fullscreen API to hide all UI chrome.
- * - Click button: enter fullscreen
- * - Press Escape: browser automatically exits
- * - fullscreenchange event: sync CSS class for sidebar visibility
+ * Syncs CSS class with fullscreen state.
+ * Triggered by keyboard shortcut (F key).
  */
-function initFullscreenToggle() {
-  const btn = document.getElementById("fullscreenToggle");
-
-  btn.addEventListener("click", () => {
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
-    } else {
-      document.documentElement.requestFullscreen();
-    }
-  });
-
-  // Sync CSS class with actual fullscreen state
+function initFullscreenChangeListener() {
   document.addEventListener("fullscreenchange", () => {
     if (document.fullscreenElement) {
       document.body.classList.add("fullscreen");
@@ -195,7 +215,7 @@ function initGlobalControls() {
     STATE.animationInterval = 1000 / CONFIG.fps;
   });
 
-  // Dot spacing slider (affects layered mode collision)
+  // Collision radius slider (affects layered mode collision detection)
   const dotSpacing = document.getElementById("dotSpacing");
   const dotSpacingValue = document.getElementById("dotSpacingValue");
   dotSpacing.value = CONFIG.dotSpacing;
@@ -211,6 +231,16 @@ function initGlobalControls() {
   collisionsCheckbox.checked = CONFIG.collisionsEnabled;
   collisionsCheckbox.addEventListener("change", (e) => {
     CONFIG.collisionsEnabled = e.target.checked;
+  });
+
+  // Global speed slider
+  const globalSpeed = document.getElementById("globalSpeed");
+  const globalSpeedValue = document.getElementById("globalSpeedValue");
+  globalSpeed.value = CONFIG.globalSpeed;
+  globalSpeedValue.textContent = CONFIG.globalSpeed;
+  globalSpeed.addEventListener("input", (e) => {
+    CONFIG.globalSpeed = parseFloat(e.target.value);
+    globalSpeedValue.textContent = CONFIG.globalSpeed;
   });
 }
 

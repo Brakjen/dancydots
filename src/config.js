@@ -16,7 +16,7 @@ export const CONFIG = {
   currentField: "randomWalk",
 
   // Canvas background color (hex)
-  backgroundColor: "#010112",
+  backgroundColor: "#020222",
 
   // Target frames per second (10-60)
   // Lower = better performance, higher = smoother animation
@@ -28,13 +28,17 @@ export const CONFIG = {
   dotSpacing: 1.0,
 
   // Enable/disable collision detection (expensive for many particles)
-  collisionsEnabled: true,
+  collisionsEnabled: false,
+
+  // Global movement speed multiplier (affects all fields)
+  // 1.0 = normal, 0.5 = half speed, 2.0 = double speed
+  globalSpeed: 1.0,
 
   // Grid mode settings
   // Creates uniform lattice of dots with regular spacing
   grid: {
     spacing: 25, // pixels between dots
-    color: "#393d01", // hex color for all dots
+    color: "#626900", // hex color for all dots
     radius: 2, // dot size in pixels
   },
 
@@ -45,28 +49,28 @@ export const CONFIG = {
   // drawMode: "solid" (fast), "gaussian" (smooth blur), "bokeh" (lens blur)
   layers: [
     {
-      count: 10, // number of dots in this layer
-      radiusRatio: 0.45, // dot size as fraction of canvas height
-      softness: 0.6, // blur amount (0=sharp, 1=very blurred)
-      speedMultiplier: 0.8, // animation speed (creates parallax when varied)
+      count: 2, // number of dots in this layer
+      radiusRatio: 0.3, // dot size as fraction of canvas height
+      softness: 0.1, // blur amount (0=sharp, 1=very blurred)
+      speedMultiplier: 0.4, // animation speed (creates parallax when varied)
       drawMode: "bokeh", // rendering style
-      colors: ["#1c3232", "#291717", "#1a301a"], // randomly chosen per dot
+      colors: ["#2b1616", "#2e2a2a", "#000000"], // randomly chosen per dot
     },
     {
-      count: 25,
+      count: 3,
       radiusRatio: 0.1,
-      softness: 1.0,
-      speedMultiplier: 1.2,
+      softness: 0.2,
+      speedMultiplier: 2,
       drawMode: "bokeh",
-      colors: ["#1d1d40", "#492441", "#505323"],
+      colors: ["#2f523c", "#492441", "#475230"],
     },
     {
-      count: 300,
-      radiusRatio: 0.003,
-      softness: 0.05,
-      speedMultiplier: 2.0,
+      count: 9800,
+      radiusRatio: 0.001,
+      softness: 0.0,
+      speedMultiplier: 0.3,
       drawMode: "solid", // solid is faster for many small dots
-      colors: ["#556666", "#665555", "#556655"],
+      colors: ["#92b9b9", "#ceabab", "#bdd7bd"],
     },
   ],
 
@@ -85,11 +89,11 @@ export const CONFIG = {
     wave: {
       waveNumber: 0.005,
       angularFrequency: 1.0,
-      amplitude: 1,
+      amplitude: 0.5,
     },
     curlNoise: {
       scale: 0.005,
-      amplitude: 15,
+      amplitude: 10,
       timeSpeed: 0.05,
     },
     multiWave: {
@@ -117,7 +121,7 @@ export const CONFIG = {
     standingWave: {
       waveNumber: 0.005,
       angularFrequency: 0.1,
-      amplitude: 1.0,
+      amplitude: 0.2,
     },
     cellular: {
       cellSize: 50,

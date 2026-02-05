@@ -300,6 +300,8 @@ function serializeConfig() {
     backgroundColor: CONFIG.backgroundColor,
     fps: CONFIG.fps,
     collisionsEnabled: CONFIG.collisionsEnabled,
+    globalSpeed: CONFIG.globalSpeed || 1.0,
+    dotSpacing: CONFIG.dotSpacing || 1.0,
     grid: { ...CONFIG.grid },
     layers: CONFIG.layers.map((l) => ({
       count: l.count,
@@ -565,7 +567,7 @@ export function generateExportCode() {
     if (dot.layer === null) return CONFIG.grid.radius;
     const layer = STATE.layers[dot.layer];
     if (!layer) return CONFIG.grid.radius;
-    return layer.radius * Math.max(1, layer.softness || 1) * 0.6;
+    return layer.radius * Math.max(1, layer.softness || 1) * (CONFIG.dotSpacing || 1.0) * 0.6;
   }
 
   function handleCollisions() {
@@ -612,10 +614,11 @@ export function generateExportCode() {
         const dot = dots[i];
         const options = { x0: dot.x0, y0: dot.y0, time: timeInSeconds };
         const field = fieldFn(dot.x, dot.y, options);
-        let speed = 1.0;
+        var globalSpeed = CONFIG.globalSpeed || 1.0;
+        let speed = globalSpeed;
         if (CONFIG.mode === "layered" && dot.layer !== null) {
           const layerConfig = STATE.layers[dot.layer];
-          speed = layerConfig ? layerConfig.speedMultiplier : 1.0;
+          speed = globalSpeed * (layerConfig ? layerConfig.speedMultiplier : 1.0);
         }
         dot.vx = field.dx * speed;
         dot.vy = field.dy * speed;
@@ -626,11 +629,11 @@ export function generateExportCode() {
         const w = canvas.width;
         const h = canvas.height;
         if (w > 0 && h > 0) {
-          if (dot.layer === 2 || dot.layer === null) {
-            // Layer 3 (small dots) and grid mode: periodic boundary (wrap around)
+          if (dot.layer === 2) {
+            // Layer 3 (small dots): periodic boundary (wrap around)
             dot.x = ((dot.x % w) + w) % w;
             dot.y = ((dot.y % h) + h) % h;
-          } else {
+          } else if (dot.layer === 0 || dot.layer === 1) {
             // Layers 1, 2 (large dots): soft containment with bounce
             var radius = STATE.layers[dot.layer] ? STATE.layers[dot.layer].radius : 10;
             if (dot.x < radius) { dot.x = radius; dot.vx = Math.abs(dot.vx) * 0.5; }

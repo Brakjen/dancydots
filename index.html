@@ -52,7 +52,7 @@
           </div>
           <div class="control-group">
             <label for="dotSpacing"
-              >Dot Spacing: <span id="dotSpacingValue">1.0</span></label
+              >Collision Radius: <span id="dotSpacingValue">1.0</span></label
             >
             <input
               type="range"
@@ -68,6 +68,19 @@
               <input type="checkbox" id="collisionsEnabled" checked />
               Enable Collisions
             </label>
+          </div>
+          <div class="control-group">
+            <label for="globalSpeed"
+              >Movement Scale: <span id="globalSpeedValue">1.0</span></label
+            >
+            <input
+              type="range"
+              id="globalSpeed"
+              min="0.1"
+              max="3.0"
+              step="0.1"
+              value="1.0"
+            />
           </div>
         </div>
       </section>
@@ -115,13 +128,6 @@
     <!-- Canvas -->
     <main id="canvasContainer">
       <canvas id="dotCanvas"></canvas>
-      <button
-        id="fullscreenToggle"
-        class="fullscreen-toggle"
-        title="Fullscreen (Esc to exit)"
-      >
-        ⛶
-      </button>
     </main>
 
     <script type="module" src="src/main.js"></script>

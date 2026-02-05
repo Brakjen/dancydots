@@ -33,8 +33,7 @@ let lastUpdate = 0;
 
 /**
  * Gets the collision radius for a dot based on its layer config.
- * Uses a smaller multiplier (0.6) than placement to allow slight overlap
- * during animation, creating more organic motion.
+ * Uses dotSpacing to control how much space dots maintain between each other.
  * @param {Object} dot - Dot object with layer property
  * @returns {number} Collision radius in pixels
  */
@@ -42,7 +41,12 @@ function getCollisionRadius(dot) {
   if (dot.layer === null) return CONFIG.grid.radius;
   const layerConfig = STATE.layers[dot.layer];
   if (!layerConfig) return CONFIG.grid.radius;
-  return layerConfig.radius * Math.max(1, layerConfig.softness || 1) * 0.6;
+  return (
+    layerConfig.radius *
+    Math.max(1, layerConfig.softness || 1) *
+    CONFIG.dotSpacing *
+    0.6
+  );
 }
 
 /**
@@ -145,12 +149,16 @@ export function initAnimation() {
         // Field returns velocity vector {dx, dy}
         const field = fieldFunction(dot.x, dot.y, options);
 
+        // Apply global speed multiplier (affects all fields uniformly)
+        const globalSpeed = CONFIG.globalSpeed || 1.0;
+
         // Apply layer-specific speed multiplier for depth effect
         // Closer layers (larger dots) move slower = parallax
-        let speed = 1.0;
+        let speed = globalSpeed;
         if (CONFIG.mode === "layered" && dot.layer !== null) {
           // Read from CONFIG for live updates without grid rebuild
-          speed = CONFIG.layers[dot.layer]?.speedMultiplier || 1.0;
+          speed =
+            globalSpeed * (CONFIG.layers[dot.layer]?.speedMultiplier || 1.0);
         }
 
         // Set velocity and update position (Euler integration)
@@ -165,11 +173,11 @@ export function initAnimation() {
         const w = STATE.canvasWidth;
         const h = STATE.canvasHeight;
         if (w > 0 && h > 0) {
-          if (dot.layer === 2 || dot.layer === null) {
-            // Layer 3 (small dots) and grid mode: periodic boundary (wrap around)
+          if (dot.layer === 2) {
+            // Layer 3 (small dots): periodic boundary (wrap around)
             dot.x = ((dot.x % w) + w) % w;
             dot.y = ((dot.y % h) + h) % h;
-          } else {
+          } else if (dot.layer === 0 || dot.layer === 1) {
             // Layers 1, 2 (large dots): soft containment with bounce
             // Reverse velocity when hitting edge, push back inside
             const radius = STATE.layers[dot.layer]?.radius || 10;
