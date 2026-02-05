@@ -1,23 +1,23 @@
 /**
  * Computed state derived from CONFIG + canvas dimensions.
- * 
+ *
  * Architecture: CONFIG vs STATE
  * ==============================
  * CONFIG: Raw user settings (ratios, colors, speeds)
  *   - Independent of canvas size
  *   - UI directly modifies these values
  *   - Serializable to URL params
- * 
+ *
  * STATE: Computed runtime values (pixel sizes, intervals)
  *   - Derived from CONFIG + canvas dimensions
  *   - Updated when CONFIG changes or window resizes
  *   - Used by rendering and animation
- * 
+ *
  * Why separate?
  *   - Responsive: same config works at any screen size
  *   - Performance: avoid recalculating pixels every frame
  *   - Clarity: distinguish settings from computed values
- * 
+ *
  * Call computeState() after:
  *   - Canvas initialization
  *   - Window resize
@@ -43,12 +43,12 @@ export const STATE = {
 
 /**
  * Recompute all derived state from CONFIG and canvas dimensions.
- * 
+ *
  * This function:
  * 1. Updates canvas dimensions
  * 2. Converts ratio-based sizes to pixel values
  * 3. Recomputes field-specific data structures
- * 
+ *
  * @param {number} canvasWidth - Canvas width in pixels
  * @param {number} canvasHeight - Canvas height in pixels
  */

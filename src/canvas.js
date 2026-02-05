@@ -1,19 +1,19 @@
 /**
  * Canvas rendering and dot placement module.
- * 
+ *
  * Responsibilities:
  * - Initialize and manage HTML canvas element
  * - Build dot grids (uniform or layered)
  * - Render dots with bokeh-style blur
  * - Handle canvas resizing
- * 
+ *
  * Rendering pipeline:
  * 1. Clear canvas with background color
  * 2. For each layer (back to front):
  *    a. For each dot in that layer:
  *       - Create radial gradient with bokeh falloff
  *       - Draw circle at dot position
- * 
+ *
  * Visual effects:
  * - Bokeh blur: Simulates camera lens out-of-focus highlights
  * - Layer ordering: Larger dots rendered first (background)

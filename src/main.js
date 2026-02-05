@@ -1,9 +1,9 @@
 /**
  * DancyDots - Animated dot field backgrounds
- * 
+ *
  * Entry point for the application.
  * Initializes canvas, animation loop, and UI controls.
- * 
+ *
  * Architecture:
  * - main.js: bootstraps the app, handles URL params
  * - config.js: user-editable settings (colors, speeds, etc.)

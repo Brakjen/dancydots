@@ -2,7 +2,7 @@
  * User-editable configuration.
  * This is what the UI will bind to.
  * All values here are static/ratios — no computed values.
- * 
+ *
  * Architecture note:
  * - CONFIG holds raw user settings (ratios, colors, speeds)
  * - STATE holds computed values (pixel sizes, animation intervals)
@@ -17,7 +17,7 @@ export const CONFIG = {
 
   // Canvas background color (hex)
   backgroundColor: "#010112",
-  
+
   // Target frames per second (10-60)
   // Lower = better performance, higher = smoother animation
   fps: 30,
@@ -30,9 +30,9 @@ export const CONFIG = {
   // Grid mode settings
   // Creates uniform lattice of dots with regular spacing
   grid: {
-    spacing: 25,      // pixels between dots
+    spacing: 25, // pixels between dots
     color: "#393d01", // hex color for all dots
-    radius: 2,        // dot size in pixels
+    radius: 2, // dot size in pixels
   },
 
   // Layered mode settings
@@ -41,10 +41,10 @@ export const CONFIG = {
   // Larger dots = background layer (farther away), smaller = foreground
   layers: [
     {
-      count: 10,              // number of dots in this layer
-      radiusRatio: 0.45,      // dot size as fraction of canvas height
-      softness: 0.6,          // blur amount (0=sharp, 1=very blurred)
-      speedMultiplier: 0.8,   // animation speed (creates parallax when varied)
+      count: 10, // number of dots in this layer
+      radiusRatio: 0.45, // dot size as fraction of canvas height
+      softness: 0.6, // blur amount (0=sharp, 1=very blurred)
+      speedMultiplier: 0.8, // animation speed (creates parallax when varied)
       colors: ["#1c3232", "#291717", "#1a301a"], // randomly chosen per dot
     },
     {

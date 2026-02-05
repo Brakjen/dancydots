@@ -1,6 +1,6 @@
 /**
  * UI module - handles all sidebar controls and user interaction.
- * 
+ *
  * Key optimization:
  * - Visual-only changes (colors, softness) call drawScene() for instant feedback
  * - Structural changes (count, size, spacing) call refresh() to rebuild grid
@@ -15,6 +15,7 @@ import {
   removeDotsFromLayer,
 } from "./canvas.js";
 import { downloadExport } from "./export.js";
+import { STATE } from "./state.js";
 
 /**
  * Initializes all UI controls and binds them to CONFIG.
@@ -151,7 +152,8 @@ function initGlobalControls() {
   fps.addEventListener("input", (e) => {
     CONFIG.fps = parseInt(e.target.value, 10);
     fpsValue.textContent = CONFIG.fps;
-    // FPS affects animation timing, no grid rebuild needed
+    // Update animation interval for immediate effect
+    STATE.animationInterval = 1000 / CONFIG.fps;
   });
 
   // Dot spacing slider (affects layered mode collision)

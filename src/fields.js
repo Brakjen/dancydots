@@ -1,9 +1,9 @@
 /**
  * Vector field implementations.
- * 
+ *
  * Each field function takes (x, y, options) and returns {dx, dy}
  * representing the velocity vector at that point.
- * 
+ *
  * options typically contains:
  *   - x0, y0: dot's home position (for restoration forces)
  *   - time: seconds since page load (for time-varying fields)
@@ -15,11 +15,11 @@ import { STATE } from "./state.js";
  * Shiver field - random jitter with restoration force.
  * Creates a "breathing" or "shimmering" effect where dots
  * vibrate around their home position.
- * 
+ *
  * - Random displacement creates jitter
  * - Restoration force pulls dots back toward (x0, y0)
  * - Penalty reduces jitter when far from home
- * 
+ *
  * @param {number} x - Current x position
  * @param {number} y - Current y position
  * @param {Object} options - Field options {x0, y0, time}
@@ -56,11 +56,11 @@ export function shiverField(x, y, options) {
  * Traveling wave field.
  * Creates a horizontal traveling wave (like ocean waves).
  * Dots move in sinusoidal pattern that propagates left-to-right.
- * 
+ *
  * Wave equation: displacement = amplitude * sin(k*x - omega*t)
  * - k (waveNumber): spatial frequency (smaller = longer wavelength)
  * - omega (angularFrequency): temporal frequency (smaller = slower)
- * 
+ *
  * @param {number} x - Current x position
  * @param {number} y - Current y position
  * @param {Object} options - Field options {time}
@@ -107,9 +107,9 @@ function hash3(i, j, k) {
  * 3D value noise function.
  * Returns smoothly-varying random values in [0,1] based on (x, y, t).
  * Uses trilinear interpolation between corner values.
- * 
+ *
  * @param {number} x - X coordinate
- * @param {number} y - Y coordinate  
+ * @param {number} y - Y coordinate
  * @param {number} t - Time coordinate (for animation)
  * @returns {number} Noise value in range [0, 1]
  */
@@ -159,16 +159,16 @@ function noise3(x, y, t) {
 
 /**
  * Curl noise field - creates organic, turbulent flow.
- * 
+ *
  * Uses the curl (rotation) of a noise field to create divergence-free flow.
  * This ensures dots don't bunch up or spread apart unnaturally.
- * 
+ *
  * Mathematical background:
  *   Given scalar field f(x,y,t):
  *   curl = (∂f/∂y, -∂f/∂x)
- * 
+ *
  * Result: smooth, swirling patterns like smoke or fluid.
- * 
+ *
  * @param {number} x - Current x position
  * @param {number} y - Current y position
  * @param {Object} options - Field options {time}

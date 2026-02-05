@@ -1,13 +1,13 @@
 /**
  * Animation loop and physics module.
- * 
+ *
  * Responsibilities:
  * - Run the main animation loop using requestAnimationFrame
  * - Apply vector field forces to dots
  * - Handle dot-to-dot collisions
  * - Update dot positions
  * - Trigger redraws
- * 
+ *
  * Animation pipeline (each frame):
  * 1. Check if enough time has passed (frame limiting)
  * 2. For each dot:
@@ -17,7 +17,7 @@
  *    d. Update position (Euler integration)
  * 3. Handle collisions between dots
  * 4. Redraw scene
- * 
+ *
  * Performance notes:
  * - Uses requestAnimationFrame for smooth 60fps browser sync
  * - Only updates physics at user-specified FPS (default 30)
@@ -119,6 +119,8 @@ function handleCollisions(dotsArray) {
  * Uses requestAnimationFrame for smooth 60fps browser rendering,
  * but only updates physics/positions at user-specified FPS (default 30)
  * to reduce computation cost.
+ * 
+ * Delta-time scaling ensures movement speed is independent of FPS.
  */
 export function initAnimation() {
   function animate(timestamp) {
@@ -127,6 +129,10 @@ export function initAnimation() {
 
     // Frame limiting: only update at configured FPS interval
     if (timestamp - lastUpdate >= STATE.animationInterval) {
+      // Delta time: seconds since last frame, normalized to 60fps baseline
+      // This makes movement speed independent of FPS setting
+      const dt = ((timestamp - lastUpdate) / 1000) * 60;
+
       dots.forEach(function (dot) {
         // Options passed to field function for context
         const options = {
@@ -147,11 +153,12 @@ export function initAnimation() {
         }
 
         // Set velocity and update position (Euler integration)
+        // Multiply by dt for frame-rate independent movement
         dot.vx = field.dx * speed;
         dot.vy = field.dy * speed;
 
-        dot.x = dot.x + dot.vx;
-        dot.y = dot.y + dot.vy;
+        dot.x = dot.x + dot.vx * dt;
+        dot.y = dot.y + dot.vy * dt;
       });
 
       handleCollisions(dots);
